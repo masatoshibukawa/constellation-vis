@@ -44,7 +44,7 @@ export interface ConstellationShell {
   flower_fh?: number;            // Fh in 0..Nd-1 (default: 0)
 
   // --- tokyo_fc ---
-  tfc_np?: number;               // Np — revolutions per repeat day (single plane)
+  tfc_np?: number;               // Np — revolutions per repeat day (Nd=1 固定)
 
   // --- lattice_flower / necklace_flower ---
   lfc_nc?: number;               // Nc in 0..No-1 (default: 0)
@@ -169,10 +169,12 @@ export const PATTERN_DEFAULTS: Record<PatternId, Partial<ConstellationShell>> = 
     nec_necklace: [1, 4, 6],
     nec_shift: 2,
   },
-  // NSGA2 pareto sample (R_vs_beamNum__1, gen 7): single-plane RGT orbit.
+  // NSGA2 pareto sample (R_vs_beamNum__1, gen 7): all satellites share one
+  // repeat-ground-track orbit shape but each has a distinct RAAN (planes is
+  // derived as N_sat, not stored as 1).
   tokyo_fc: {
     count: 90,
-    planes: 1,
+    apogee_altitude: 0,
     inclination: 43.3182147856553,
     raan_start: 259.177966534877,
     mean_anomaly_0: 82.3558762069336,

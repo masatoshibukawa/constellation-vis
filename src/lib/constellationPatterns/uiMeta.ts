@@ -20,7 +20,7 @@ import { admissibleShifts, necklaceParams } from "./necklaceFlower";
 import type { PatternId, ShellDerived } from "./types";
 import { PATTERN_IDS } from "./types";
 
-export type PatternGroup = "ウォーカー系" | "フラワー系";
+export type PatternGroup = "ウォーカー系" | "フラワー系" | "NSGA2由来";
 
 export interface PatternMetaEntry {
   /** Menu label, e.g. "Walker Delta（デルタ配置）". */
@@ -70,13 +70,11 @@ export const PATTERN_META: Record<PatternId, PatternMetaEntry> = {
     summary: "2D-LFC の格子スロットを一部だけ使い、面ごとにシフト k で回す間引き配置。",
     help: "各面に Nso 個のスロット(パール)を用意し、そのうち選んだ部分集合だけを使います。面をまたぐごとにパールをシフト k だけ回すため、Sym(G) が k·No − Nc を割り切る必要があります。",
   },
-  // TODO(後続タスク): 専用のUIメタ情報(ラベル・フィールド一覧・PATTERN_DEFAULTS等)を整備する。
-  // 暫定的にモジュールロード時のクラッシュ(PATTERN_GROUPS初期化)だけを避ける最小限のエントリ。
   tokyo_fc: {
-    label: "Tokyo FC（東京FC）",
-    group: "フラワー系",
-    summary: "単一軌道面の回帰軌道上に N_sat 機を配置する方式(NSGA2最適化ツール由来)。",
-    help: "N_p 周回/1日で地上軌跡が閉じる単一軌道面に、等間隔で N_sat 機を配置します。半長軸は傾斜角と N_p から解かれます。",
+    label: "Tokyo FC（NSGA2最適化解）",
+    group: "NSGA2由来",
+    summary: "単一軌道面の回帰軌道に等間隔配置。NSGA2パレート解のインポート専用。",
+    help: "MATLAB calc_Tokyo_FC_Gimbal_rev8.m の近似式をそのまま移植したパターンです。N_p 周回/日で地上軌跡が閉じる回帰軌道に、N_sat 機を衛星ごとに異なるRAANで等間隔配置します。NSGA2 タブから解を選ぶと自動生成されます。",
   },
 };
 
@@ -153,6 +151,7 @@ export const HIDDEN_FIELDS: Record<PatternId, readonly (keyof ConstellationShell
   flower: ["raan_range", "planes"],
   lattice_flower: ["raan_range"],
   necklace_flower: ["raan_range"],
+  tokyo_fc: ["raan_range", "planes", "eccentricity", "argp"],
 };
 
 /** Keys that have their own dedicated controls rather than a `FieldUiSpec`. */
@@ -484,6 +483,51 @@ const FLOWER_FIELDS: FieldUiSpec[] = [
   MEAN_ANOMALY_0,
 ];
 
+// --- tokyo_fc ---
+
+const TOKYO_FC_FIELDS: FieldUiSpec[] = [
+  {
+    key: "tfc_np",
+    label: "周回数/日 (N_p)",
+    group: "basic",
+    kind: "number",
+    min: 1,
+    max: 2000,
+    step: 1,
+    integer: true,
+    help: "1日あたりの周回数。地上軌跡がちょうど1日で閉じる回帰軌道の半長軸がここから解かれます。",
+  },
+  {
+    key: "count",
+    label: "総衛星数 (N_sat)",
+    group: "basic",
+    kind: "number",
+    min: 1,
+    max: 2000,
+    step: 1,
+    integer: true,
+    help: "配置する衛星数。各衛星は異なるRAANを持ち、等間隔に配置されます。",
+  },
+  inclination("NSGA2最適化で決まる軌道傾斜角。", "basic"),
+  {
+    key: "apogee_altitude",
+    label: "高度",
+    labelOverride: "高度（導出）",
+    unit: "km",
+    group: "basic",
+    kind: "readonly",
+    help: "N_p・傾斜角から解かれる回帰軌道の高度。入力ではありません。",
+    read: (_shell, derived) => {
+      if (derived && derived.pattern === "tokyo_fc" && derived.solvedSemiMajorAxisKm !== null) {
+        return round(derived.solvedSemiMajorAxisKm - 6378.1363, 2);
+      }
+      return 0;
+    },
+  },
+  RAAN_START,
+  MEAN_ANOMALY_0,
+];
+
 // --- lattice / necklace ----------------------------------------------------
 
 const LATTICE_NO: FieldUiSpec = {
@@ -645,6 +689,7 @@ export const PATTERN_FIELD_SPECS: Record<PatternId, readonly FieldUiSpec[]> = {
   flower: FLOWER_FIELDS,
   lattice_flower: LATTICE_FIELDS,
   necklace_flower: NECKLACE_FIELDS,
+  tokyo_fc: TOKYO_FC_FIELDS,
 };
 
 function round(value: number, digits: number): number {
@@ -680,5 +725,9 @@ export const PATTERN_GROUPS: { group: PatternGroup; patterns: PatternId[] }[] = 
   {
     group: "フラワー系",
     patterns: PATTERN_IDS.filter((p) => PATTERN_META[p].group === "フラワー系"),
+  },
+  {
+    group: "NSGA2由来",
+    patterns: PATTERN_IDS.filter((p) => PATTERN_META[p].group === "NSGA2由来"),
   },
 ];
