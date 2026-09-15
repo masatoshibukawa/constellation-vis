@@ -17,9 +17,11 @@ describe("solveTokyoFcSemiMajorAxis", () => {
     expect(Math.abs(residual)).toBeLessThan(1e-6);
   });
 
-  it("returns null for a non-physical inclination/Np combination it cannot bracket", () => {
+  it("returns null for a non-positive Np (input guard)", () => {
     const result = solveTokyoFcSemiMajorAxis(0, 43.3182147856553);
     expect(result).toBeNull();
+    const resultNegative = solveTokyoFcSemiMajorAxis(-1, 43.3182147856553);
+    expect(resultNegative).toBeNull();
   });
 });
 

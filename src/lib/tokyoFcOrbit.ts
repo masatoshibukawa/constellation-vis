@@ -80,7 +80,7 @@ export function solveTokyoFcSemiMajorAxis(
 
   const fGuess = residual(np, iRad, guessKm);
   if (!Number.isFinite(fGuess)) return null;
-  if (Math.abs(fGuess) < 1e-9) return finalize(np, iRad, guessKm);
+  if (Math.abs(fGuess) < 1e-9) return finalize(iRad, guessKm);
 
   let aLow = guessKm;
   let aHigh = guessKm;
@@ -118,7 +118,7 @@ export function solveTokyoFcSemiMajorAxis(
     const midF = residual(np, iRad, midA);
     if (!Number.isFinite(midF)) return null;
     if (Math.abs(midF) < 1e-9 || Math.abs(rightA - leftA) < 1e-9) {
-      return finalize(np, iRad, midA);
+      return finalize(iRad, midA);
     }
     if (leftF * midF <= 0) {
       rightA = midA;
@@ -128,14 +128,17 @@ export function solveTokyoFcSemiMajorAxis(
     }
   }
 
-  return finalize(np, iRad, 0.5 * (leftA + rightA));
+  return finalize(iRad, 0.5 * (leftA + rightA));
 }
 
-function finalize(np: number, iRad: number, semiMajorAxisKm: number): TokyoFcOrbitSolution {
+function finalize(iRad: number, semiMajorAxisKm: number): TokyoFcOrbitSolution | null {
   const n = meanMotion(semiMajorAxisKm);
   const mdot0 = mDot(semiMajorAxisKm, iRad);
   const bigOmegaDot = omegaBigDot(semiMajorAxisKm, iRad);
-  const q = (n + mdot0) / (TFC_OMEGA_EARTH + bigOmegaDot);
+  const denom = TFC_OMEGA_EARTH + bigOmegaDot;
+  if (Math.abs(denom) < 1e-12) return null;
+  const q = (n + mdot0) / denom;
+  if (!Number.isFinite(q)) return null;
   return { semiMajorAxisKm, q };
 }
 
