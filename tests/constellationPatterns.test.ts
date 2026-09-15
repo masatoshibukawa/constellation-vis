@@ -13,6 +13,7 @@ import {
   admissibleShifts,
   capAreaLowerBoundCount,
   computeShellDerived,
+  deriveTokyoFc,
   designStreetsOfCoverage,
   earthCentralAngleDeg,
   flowerMaxSatellites,
@@ -28,11 +29,13 @@ import {
   planLatticeFlower,
   planNecklaceFlower,
   planStreetsOfCoverage,
+  planTokyoFc,
   planWalkerDelta,
   planWalkerStar,
   resolvePattern,
   streetHalfWidthRad,
   validateShell,
+  validateTokyoFc,
   type PatternId,
   type PatternShellInput,
   type PlanePlan,
@@ -897,5 +900,58 @@ soc_sats_per_plane = 11
       const pair = Array.isArray(e) ? e : [e.a ?? e.from ?? 0, e.b ?? e.to ?? 0];
       expect(Math.max(...pair)).toBeLessThan(7);
     }
+  });
+});
+
+describe("tokyo_fc", () => {
+  const TFC_SAMPLE = {
+    pattern: "tokyo_fc",
+    tfc_np: 13,
+    count: 90,
+    planes: 1,
+    inclination: 43.3182147856553,
+    raan_start: 259.177966534877,
+    mean_anomaly_0: 82.3558762069336,
+    eccentricity: 0,
+    argp: 0,
+  };
+
+  it("solves a single-plane semi-major axis and places N_sat satellites on it", () => {
+    const plan = planTokyoFc(TFC_SAMPLE);
+    expect(plan.plans.length).toBe(1);
+    expect(plan.plans[0].meanAnomaliesDeg.length).toBe(90);
+    expect(plan.orbit.eccentricity).toBe(0);
+    expect(plan.orbit.semiMajorAxisKm).toBeGreaterThan(6378.1363);
+  });
+
+  it("places satellites at RAAN = raan_start - k*(360/N_sat) for k=0..N_sat-1 (mod 360)", () => {
+    const plan = planTokyoFc(TFC_SAMPLE);
+    // planFlower同様、単一planeなのでplans[0].raanDegは代表値(k=0のRAAN)。
+    // meanAnomaliesDegはソート済みで返る。
+    expect(plan.plans[0].meanAnomaliesDeg.length).toBe(TFC_SAMPLE.count);
+    for (const ma of plan.plans[0].meanAnomaliesDeg) {
+      expect(ma).toBeGreaterThanOrEqual(0);
+      expect(ma).toBeLessThan(360);
+    }
+  });
+
+  it("rejects tfc_np <= 0", () => {
+    const errors = validateTokyoFc({ ...TFC_SAMPLE, tfc_np: 0 }, 0);
+    expect(errors.some((e) => e.field === "shell.0.tfc_np")).toBe(true);
+  });
+
+  it("warns via solver_failed when no semi-major axis brackets the residual", () => {
+    // 傾斜角0度・Np=0のような非物理的組み合わせを与えてsolver_failedを誘発
+    const plan = planTokyoFc({ ...TFC_SAMPLE, tfc_np: 0 });
+    expect(plan.warnings.some((w) => w.code === "solver_failed")).toBe(true);
+  });
+
+  it("derives np/nSat/q/solvedSemiMajorAxisKm", () => {
+    const derived = deriveTokyoFc(TFC_SAMPLE);
+    expect(derived.pattern).toBe("tokyo_fc");
+    if (derived.pattern !== "tokyo_fc") return;
+    expect(derived.np).toBe(13);
+    expect(derived.nSat).toBe(90);
+    expect(derived.solvedSemiMajorAxisKm).not.toBeNull();
   });
 });

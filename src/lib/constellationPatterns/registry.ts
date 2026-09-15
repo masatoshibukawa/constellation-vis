@@ -14,6 +14,7 @@ import { flowerGenerator } from "./flower";
 import { latticeFlowerGenerator } from "./latticeFlower";
 import { necklaceFlowerGenerator } from "./necklaceFlower";
 import { streetsOfCoverageGenerator } from "./streetsOfCoverage";
+import { tokyoFcGenerator } from "./tokyoFc";
 import { walkerDeltaGenerator } from "./walkerDelta";
 import { walkerStarGenerator } from "./walkerStar";
 import {
@@ -35,6 +36,7 @@ export const PATTERN_REGISTRY: Record<PatternId, PatternGenerator> = {
   flower: flowerGenerator,
   lattice_flower: latticeFlowerGenerator,
   necklace_flower: necklaceFlowerGenerator,
+  tokyo_fc: tokyoFcGenerator,
 };
 
 /** Generator for a shell. Missing or unrecognised `pattern` → walker_delta. */

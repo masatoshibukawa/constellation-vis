@@ -152,3 +152,12 @@ export {
   normalizeNecklace,
   planNecklaceFlower,
 } from "./necklaceFlower";
+
+export type { TokyoFcParams } from "./tokyoFc";
+export {
+  deriveTokyoFc,
+  planTokyoFc,
+  tokyoFcGenerator,
+  tokyoFcParams,
+  validateTokyoFc,
+} from "./tokyoFc";

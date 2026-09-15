@@ -43,6 +43,9 @@ export interface ConstellationShell {
   flower_fd?: number;            // Fd — also the plane count (default: planes)
   flower_fh?: number;            // Fh in 0..Nd-1 (default: 0)
 
+  // --- tokyo_fc ---
+  tfc_np?: number;               // Np — revolutions per repeat day (single plane)
+
   // --- lattice_flower / necklace_flower ---
   lfc_nc?: number;               // Nc in 0..No-1 (default: 0)
 
@@ -165,6 +168,17 @@ export const PATTERN_DEFAULTS: Record<PatternId, Partial<ConstellationShell>> = 
     nec_pearls: 9,
     nec_necklace: [1, 4, 6],
     nec_shift: 2,
+  },
+  // NSGA2 pareto sample (R_vs_beamNum__1, gen 7): single-plane RGT orbit.
+  tokyo_fc: {
+    count: 90,
+    planes: 1,
+    inclination: 43.3182147856553,
+    raan_start: 259.177966534877,
+    mean_anomaly_0: 82.3558762069336,
+    eccentricity: 0,
+    argp: 0,
+    tfc_np: 13,
   },
 };
 

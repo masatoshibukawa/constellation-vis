@@ -70,6 +70,14 @@ export const PATTERN_META: Record<PatternId, PatternMetaEntry> = {
     summary: "2D-LFC の格子スロットを一部だけ使い、面ごとにシフト k で回す間引き配置。",
     help: "各面に Nso 個のスロット(パール)を用意し、そのうち選んだ部分集合だけを使います。面をまたぐごとにパールをシフト k だけ回すため、Sym(G) が k·No − Nc を割り切る必要があります。",
   },
+  // TODO(後続タスク): 専用のUIメタ情報(ラベル・フィールド一覧・PATTERN_DEFAULTS等)を整備する。
+  // 暫定的にモジュールロード時のクラッシュ(PATTERN_GROUPS初期化)だけを避ける最小限のエントリ。
+  tokyo_fc: {
+    label: "Tokyo FC（東京FC）",
+    group: "フラワー系",
+    summary: "単一軌道面の回帰軌道上に N_sat 機を配置する方式(NSGA2最適化ツール由来)。",
+    help: "N_p 周回/1日で地上軌跡が閉じる単一軌道面に、等間隔で N_sat 機を配置します。半長軸は傾斜角と N_p から解かれます。",
+  },
 };
 
 export type FieldUiGroup = "basic" | "advanced";
