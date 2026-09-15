@@ -918,20 +918,22 @@ describe("tokyo_fc", () => {
 
   it("solves a single-plane semi-major axis and places N_sat satellites on it", () => {
     const plan = planTokyoFc(TFC_SAMPLE);
-    expect(plan.plans.length).toBe(1);
-    expect(plan.plans[0].meanAnomaliesDeg.length).toBe(90);
+    expect(plan.plans.length).toBe(90);
+    expect(plan.plans.every((p) => p.meanAnomaliesDeg.length === 1)).toBe(true);
     expect(plan.orbit.eccentricity).toBe(0);
     expect(plan.orbit.semiMajorAxisKm).toBeGreaterThan(6378.1363);
   });
 
-  it("places satellites at RAAN = raan_start - k*(360/N_sat) for k=0..N_sat-1 (mod 360)", () => {
+  it("assigns each satellite a distinct RAAN following Omega_k = raan_start - k*(360/N_sat) (mod 360)", () => {
     const plan = planTokyoFc(TFC_SAMPLE);
-    // planFlower同様、単一planeなのでplans[0].raanDegは代表値(k=0のRAAN)。
-    // meanAnomaliesDegはソート済みで返る。
-    expect(plan.plans[0].meanAnomaliesDeg.length).toBe(TFC_SAMPLE.count);
-    for (const ma of plan.plans[0].meanAnomaliesDeg) {
-      expect(ma).toBeGreaterThanOrEqual(0);
-      expect(ma).toBeLessThan(360);
+    expect(plan.plans.length).toBe(TFC_SAMPLE.count);
+    const raans = plan.plans.map((p) => p.raanDeg);
+    // 全て一意であること(同一RAANに複数衛星が重複配置されていないこと)
+    const uniqueRaans = new Set(raans.map((r) => Math.round(r * 1e6)));
+    expect(uniqueRaans.size).toBe(TFC_SAMPLE.count);
+    for (const raan of raans) {
+      expect(raan).toBeGreaterThanOrEqual(0);
+      expect(raan).toBeLessThan(360);
     }
   });
 
@@ -940,18 +942,18 @@ describe("tokyo_fc", () => {
     expect(errors.some((e) => e.field === "shell.0.tfc_np")).toBe(true);
   });
 
-  it("warns via solver_failed when no semi-major axis brackets the residual", () => {
-    // 傾斜角0度・Np=0のような非物理的組み合わせを与えてsolver_failedを誘発
+  it("returns a solver_failed warning for tfc_np <= 0 (input guard before the solver runs)", () => {
     const plan = planTokyoFc({ ...TFC_SAMPLE, tfc_np: 0 });
     expect(plan.warnings.some((w) => w.code === "solver_failed")).toBe(true);
   });
 
-  it("derives np/nSat/q/solvedSemiMajorAxisKm", () => {
+  it("derives np/nSat/q/solvedSemiMajorAxisKm and planes=N_sat", () => {
     const derived = deriveTokyoFc(TFC_SAMPLE);
     expect(derived.pattern).toBe("tokyo_fc");
     if (derived.pattern !== "tokyo_fc") return;
     expect(derived.np).toBe(13);
     expect(derived.nSat).toBe(90);
     expect(derived.solvedSemiMajorAxisKm).not.toBeNull();
+    expect(derived.planes).toBe(90);
   });
 });

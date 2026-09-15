@@ -8,9 +8,17 @@
  * 独立している。詳細な数式の根拠は
  * docs/superpowers/specs/2026-09-15-nsga2-pareto-import-design.md 参照。
  *
- * 全衛星は単一軌道面(planes=1)・円軌道(e=0)・argp=0 に配置される:
+ * 全衛星は同一の半長軸・離心率(e=0)・傾斜角・argp=0 の回帰軌道条件を共有するが、
+ * 衛星ごとに異なる RAAN・平均近点角を持つ(MATLAB原典 114-140行目参照。
+ * `satellite(sc, a, e, i_deg, Omegas(kk), omega_arg, M0s(kk), ...)` のように
+ * 衛星 kk ごとに異なる Omegas(kk) が渡される):
  *   Ω_k = Ω₁ − k·(360/Ns)
  *   M_k = M₁ + k·(360/Ns)·Q,   Q = (n + Mdot0) / (omega_earth + Omegadot)
+ *
+ * `ShellPlan.plans: PlanePlan[]` は「1つのRAANに対し複数衛星のmeanAnomaly配列」
+ * という構造だが、tokyo_fc は衛星ごとにRAANが異なるため、N_sat 個の plane を
+ * 作り各 plane に1機だけを割り当てる(「単一軌道面」は幾何形状=1つの回帰軌道を
+ * 共有する、という意味であり、全衛星が同一RAANを共有するという意味ではない)。
  */
 
 import { fieldKeysForPattern, numberField } from "./fields";
@@ -70,18 +78,21 @@ export function planTokyoFc(shell: PatternShellInput): ShellPlan {
     };
   }
 
-  const meanAnomaliesDeg: number[] = [];
+  // 各衛星 k=0..N_sat-1 は異なるRAANを持つ「1機だけのplane」として表現する
+  // (MATLAB原典は各衛星に別々のRAANを割り当てており、単一planeへの共有ではない)。
+  const plans: PlanePlan[] = [];
   if (params.nSat > 0) {
     for (let k = 0; k < params.nSat; k++) {
       const slot = tokyoFcSlot(k, params.nSat, params.raan1Deg, params.meanAnomaly1Deg, solved.q);
-      meanAnomaliesDeg.push(normalizeAngleDeg(slot.meanAnomalyDeg));
+      plans.push({
+        raanDeg: normalizeAngleDeg(slot.raanDeg),
+        meanAnomaliesDeg: [normalizeAngleDeg(slot.meanAnomalyDeg)],
+      });
     }
   }
-  meanAnomaliesDeg.sort((a, b) => a - b);
-
-  const plans: PlanePlan[] = [
-    { raanDeg: normalizeAngleDeg(params.raan1Deg), meanAnomaliesDeg },
-  ];
+  // RAAN昇順にソートする(既存の flower.ts の planFlower が採用している規約:
+  // +Grid ISLトポロジーと3D描画がplane-major・RAAN単調増加を前提にしているため)。
+  plans.sort((a, b) => a.raanDeg - b.raanDeg);
 
   return {
     plans,
@@ -105,11 +116,11 @@ export function deriveTokyoFc(shell: PatternShellInput): ShellDerived {
   return {
     ...buildCommonDerived({
       totalSats: params.nSat,
-      planes: 1,
-      planeSizes: [plan.plans[0]?.meanAnomaliesDeg.length ?? 0],
+      planes: plan.plans.length,
+      planeSizes: plan.plans.map((p) => p.meanAnomaliesDeg.length),
       orbit: plan.orbit,
-      raanSpacingDeg: 0,
-      inPlaneSpacingDeg: params.nSat > 0 ? 360 / params.nSat : 0,
+      raanSpacingDeg: params.nSat > 0 ? 360 / params.nSat : 0,
+      inPlaneSpacingDeg: 0,
       interPlaneOffsetDeg: 0,
       warnings: plan.warnings,
     }),
