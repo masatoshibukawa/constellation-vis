@@ -4,6 +4,17 @@
  * デフォルト X=Obj_Nlaunch, Y=CN0_dBHz、3つ目の目的 MeanVisibleCount は色。
  * 既存の解析タブのチャートオプション組み立てパターン(src/components/analysis/utils/chartOptions.ts)
  * に倣ったダークテーマ固定のオプションを直接ここで組み立てる。
+ *
+ * 注意: xAxis/yAxis には必ず type: "value" を明示する。省略すると echarts が
+ * カテゴリ軸と誤認し、scatter系列の数値ペアが正しくプロットされない。
+ *
+ * 注意: series に animation: false 相当の設定がないと、このパネルのように
+ * 「case選択で条件付きレンダリングされた直後にレイアウトが確定する」タイミングでは
+ * echarts-for-react 内部の ResizeObserver(size-sensor) 起因の resize() 呼び出しが
+ * シンボルの初期出現アニメーション(scale 0→1)と競合し、シンボルが scale 0 の
+ * まま描画されない不具合が実際に発生することを確認した(Playwrightのヘッドレス/
+ * ヘッドフル両方、および animation: false での回避を検証済み)。そのため
+ * オプション全体で animation を無効化している。
  */
 import { useMemo, useRef } from "react";
 import ReactECharts from "echarts-for-react";
@@ -45,8 +56,10 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
     return {
       backgroundColor: "rgba(30, 32, 36, 0.95)",
       textStyle: { color: "#f1f1f1" },
+      animation: false,
       grid: { left: 60, right: 30, top: 30, bottom: 50 },
       xAxis: {
+        type: "value",
         name: AXIS_LABELS[xKey],
         nameLocation: "middle",
         nameGap: 30,
@@ -54,6 +67,7 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
         nameTextStyle: { color: "#999faa" },
       },
       yAxis: {
+        type: "value",
         name: AXIS_LABELS[yKey],
         nameLocation: "middle",
         nameGap: 45,
@@ -90,6 +104,7 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
     <ReactECharts
       ref={chartRef}
       option={option}
+      notMerge={true}
       theme="dark"
       style={{ height: "100%", width: "100%", minHeight: 320 }}
       onEvents={{
