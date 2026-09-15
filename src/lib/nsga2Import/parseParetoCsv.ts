@@ -27,6 +27,16 @@ const EXPECTED_HEADER = [
   "N_element",
 ];
 
+/** 空文字列・非有限値・trim漏れを弾く厳密な数値パース。 */
+function parseNumericCell(raw: string, rowNumber: number, lineText: string): number {
+  const trimmed = raw.trim();
+  const value = Number(trimmed);
+  if (trimmed === "" || !Number.isFinite(value)) {
+    throw new Error(`pareto.csv の${rowNumber}行目に不正な数値セル "${raw}" があります: "${lineText}"`);
+  }
+  return value;
+}
+
 /**
  * `pareto.csv` 全文をパースする。空行は無視する。ヘッダが想定と一致しない
  * 場合は例外を投げる(呼び出し元がどのファイルで失敗したか分かるよう、
@@ -52,10 +62,7 @@ export function parseParetoCsv(csvText: string): ParetoSolution[] {
     if (cells.length !== EXPECTED_HEADER.length) {
       throw new Error(`pareto.csv の${i + 1}行目の列数が不正です: "${lines[i]}"`);
     }
-    const values = cells.map(Number);
-    if (values.some((v) => Number.isNaN(v))) {
-      throw new Error(`pareto.csv の${i + 1}行目に数値でない値があります: "${lines[i]}"`);
-    }
+    const values = cells.map((cell) => parseNumericCell(cell, i + 1, lines[i]));
     solutions.push({
       gen: values[0],
       pop: values[1],

@@ -30,4 +30,39 @@ describe("parseParetoCsv", () => {
   it("throws a descriptive error when the header does not match the expected columns", () => {
     expect(() => parseParetoCsv("Foo,Bar\n1,2\n")).toThrow(/pareto\.csv/);
   });
+
+  it("throws when a data row has fewer columns than the header", () => {
+    const csv =
+      "Gen,Pop,Obj_Nlaunch,Obj_CN0,Obj_MeanVisibleCount,CN0_dBHz,MeanVisibleCount,N_p,N_sat,i_deg,raan0_deg,M0_deg,N_element\n" +
+      "6,14\n";
+    expect(() => parseParetoCsv(csv)).toThrow(/pareto\.csv/);
+  });
+
+  it("throws when a cell is non-numeric text", () => {
+    const csv =
+      "Gen,Pop,Obj_Nlaunch,Obj_CN0,Obj_MeanVisibleCount,CN0_dBHz,MeanVisibleCount,N_p,N_sat,i_deg,raan0_deg,M0_deg,N_element\n" +
+      "foo,14,23,-88.8,-2.3,88.8,2.3,13,90,43.3,258.4,83.4,3521\n";
+    expect(() => parseParetoCsv(csv)).toThrow(/pareto\.csv/);
+  });
+
+  it("throws when a cell is empty rather than silently defaulting to 0", () => {
+    const csv =
+      "Gen,Pop,Obj_Nlaunch,Obj_CN0,Obj_MeanVisibleCount,CN0_dBHz,MeanVisibleCount,N_p,N_sat,i_deg,raan0_deg,M0_deg,N_element\n" +
+      "6,,23,-88.8,-2.3,88.8,2.3,13,90,43.3,258.4,83.4,3521\n";
+    expect(() => parseParetoCsv(csv)).toThrow(/pareto\.csv/);
+  });
+
+  it("handles CRLF line endings", () => {
+    const csv =
+      "Gen,Pop,Obj_Nlaunch,Obj_CN0,Obj_MeanVisibleCount,CN0_dBHz,MeanVisibleCount,N_p,N_sat,i_deg,raan0_deg,M0_deg,N_element\r\n" +
+      "6,14,23,-88.8,-2.3,88.8,2.3,13,90,43.3,258.4,83.4,3521\r\n";
+    const solutions = parseParetoCsv(csv);
+    expect(solutions.length).toBe(1);
+    expect(solutions[0].gen).toBe(6);
+  });
+
+  it("rejects a header with correct column names but wrong order", () => {
+    const csv = "Pop,Gen,Obj_Nlaunch,Obj_CN0,Obj_MeanVisibleCount,CN0_dBHz,MeanVisibleCount,N_p,N_sat,i_deg,raan0_deg,M0_deg,N_element\n1,2,3,4,5,6,7,8,9,10,11,12,13\n";
+    expect(() => parseParetoCsv(csv)).toThrow(/pareto\.csv/);
+  });
 });
