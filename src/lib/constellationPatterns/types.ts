@@ -14,7 +14,8 @@ export type PatternId =
   | "streets_of_coverage"
   | "flower"
   | "lattice_flower"
-  | "necklace_flower";
+  | "necklace_flower"
+  | "tokyo_fc";
 
 /** Every known pattern id, in menu order (walker family first, flower family second). */
 export const PATTERN_IDS: readonly PatternId[] = [
@@ -24,6 +25,7 @@ export const PATTERN_IDS: readonly PatternId[] = [
   "flower",
   "lattice_flower",
   "necklace_flower",
+  "tokyo_fc",
 ] as const;
 
 /** Pattern used when `pattern` is omitted — preserves pre-pattern TOML files. */
@@ -51,6 +53,7 @@ export const PATTERN_SHORT_LABELS: Record<PatternId, string> = {
   flower: "FC",
   lattice_flower: "LFC",
   necklace_flower: "NFC",
+  tokyo_fc: "TFC",
 };
 
 /**
@@ -92,6 +95,9 @@ export interface PatternShellInput {
   flower_fn?: number;
   flower_fd?: number;
   flower_fh?: number;
+
+  // --- tokyo_fc ---
+  tfc_np?: number;
 
   // --- lattice_flower / necklace_flower ---
   lfc_nc?: number;
@@ -327,6 +333,17 @@ export type ShellDerived =
       deltaMDeg: number;
       /** Walker notation of the underlying (fully populated) lattice. */
       walkerNotation: string;
+    })
+  | (ShellDerivedCommon & {
+      pattern: "tokyo_fc";
+      /** N_p — revolutions per repeat day (Nd=1 固定)。 */
+      np: number;
+      /** N_sat — 配置衛星数(単一軌道面)。 */
+      nSat: number;
+      /** 平均近点角割当てに使う Q = (n + Mdot0) / (omega_earth + Omegadot)。 */
+      q: number;
+      /** 解かれた半長軸(km)。解なしなら null。 */
+      solvedSemiMajorAxisKm: number | null;
     });
 
 /** Result of generating a shell: geometry plus everything the UI/ISL layer needs. */
