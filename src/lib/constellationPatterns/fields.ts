@@ -107,6 +107,9 @@ export const FIELD_REGISTRY: readonly FieldSpec[] = [
   { key: "flower_fd", kind: "int", default: (shell) => Number(shell.planes ?? 1), patterns: ["flower"] },
   { key: "flower_fh", kind: "int", default: 0, patterns: ["flower"] },
 
+  // --- tokyo_fc ---
+  { key: "tfc_np", kind: "int", patterns: ["tokyo_fc"] },
+
   // --- lattice_flower / necklace_flower ---
   { key: "lfc_nc", kind: "int", default: 0, patterns: LATTICE_LIKE },
 
