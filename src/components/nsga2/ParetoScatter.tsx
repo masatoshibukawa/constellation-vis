@@ -57,7 +57,9 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
       backgroundColor: "rgba(30, 32, 36, 0.95)",
       textStyle: { color: "#f1f1f1" },
       animation: false,
-      grid: { left: 60, right: 30, top: 30, bottom: 50 },
+      // visualMapを下部の横向きバーにすることで、右側に縦向きバーを置く場合に
+      // 発生していたグラフ本体との重なり(見切れ)を避ける。
+      grid: { left: 60, right: 20, top: 30, bottom: 90 },
       xAxis: {
         type: "value",
         name: AXIS_LABELS[xKey],
@@ -78,22 +80,30 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
         min: minVisible,
         max: maxVisible,
         dimension: 2,
-        orient: "vertical",
-        right: 0,
-        top: "middle",
+        orient: "horizontal",
+        left: "center",
+        bottom: 0,
+        itemWidth: 12,
+        itemHeight: 100,
         text: ["平均可視衛星数(高)", "(低)"],
-        textStyle: { color: "#f1f1f1" },
+        textStyle: { color: "#f1f1f1", fontSize: 11 },
         inRange: { color: ["#1f77ff", "#ed6d00"] },
       },
       series: [
         {
           type: "scatter",
-          symbolSize: 10,
+          // クリックで選択しやすいよう、既存の10pxから拡大する。
+          symbolSize: 14,
           data,
           itemStyle: {
             borderColor: (params: { dataIndex: number }) =>
               params.dataIndex === selectedIndex ? "#ffffff" : "transparent",
             borderWidth: 2,
+          },
+          // ホバー時にわずかに拡大し、クリック可能であることを視覚的に示す。
+          emphasis: {
+            scale: 1.3,
+            itemStyle: { borderColor: "#ffffff", borderWidth: 2 },
           },
         },
       ],
@@ -108,7 +118,12 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
       theme="dark"
       style={{ height: "100%", width: "100%", minHeight: 320 }}
       onEvents={{
-        click: (params: { dataIndex: number }) => onSelect(params.dataIndex),
+        // seriesIndexが無い(軸や余白など、データ点以外)のクリックでは
+        // dataIndexが不定な値になりうるため、series上のクリックのみ反映する。
+        click: (params: { componentType?: string; seriesIndex?: number; dataIndex: number }) => {
+          if (params.componentType !== "series" || params.seriesIndex !== 0) return;
+          onSelect(params.dataIndex);
+        },
       }}
     />
   );
