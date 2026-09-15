@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "bun scripts/generate-satellites.ts",
+    "predev": "bun scripts/generate-satellites.ts && bun scripts/generate-nsga2-index.ts",
     "dev": "vite",
-    "prebuild": "bun scripts/generate-satellites.ts",
+    "prebuild": "bun scripts/generate-satellites.ts && bun scripts/generate-nsga2-index.ts",
     "build": "tsc -b && vite build",
     "build:cli": "bun scripts/build-cli.ts",
     "cli": "bun src/cli/main.ts",

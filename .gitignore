@@ -26,6 +26,8 @@ TODO.md
 
 # generated files
 src/data/satellites.generated.ts
+public/nsga2-runs/
+src/lib/nsga2Runs.generated.ts
 
 # input files
 public/assets/satellites.toml
