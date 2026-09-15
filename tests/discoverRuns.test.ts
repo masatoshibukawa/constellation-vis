@@ -62,4 +62,29 @@ describe("discoverRunFromDirectoryHandle", () => {
     expect(run.sweeps[0].cases[0].caseId).toBe("R_vs_beamNum__2");
     expect(run.sweeps[0].cases[0].pairedValue).toBeNull();
   });
+
+  it("skips a case whose pareto.csv is malformed instead of failing the whole run", async () => {
+    const badCaseDir = makeDir("bad_case", [makeFile("pareto.csv", "not,a,valid,header\n1,2,3,4\n")]);
+    const goodCaseDir = makeDir("good_case", [makeFile("pareto.csv", SAMPLE_CSV)]);
+    const sweepDir = makeDir("sweep", [badCaseDir, goodCaseDir]);
+    const runDir = makeDir("run", [sweepDir]);
+
+    const run = await discoverRunFromDirectoryHandle(runDir as never);
+    expect(run.sweeps.length).toBe(1);
+    expect(run.sweeps[0].cases.length).toBe(1);
+    expect(run.sweeps[0].cases[0].caseId).toBe("good_case");
+  });
+
+  it("falls back to empty config when config.json is invalid JSON", async () => {
+    const caseDir = makeDir("case_with_bad_json", [
+      makeFile("pareto.csv", SAMPLE_CSV),
+      makeFile("config.json", "{not valid json"),
+    ]);
+    const sweepDir = makeDir("sweep", [caseDir]);
+    const runDir = makeDir("run", [sweepDir]);
+
+    const run = await discoverRunFromDirectoryHandle(runDir as never);
+    expect(run.sweeps[0].cases[0].caseId).toBe("case_with_bad_json");
+    expect(run.sweeps[0].cases[0].pairedValue).toBeNull();
+  });
 });

@@ -51,9 +51,20 @@ interface CaseConfig {
   case_id?: string;
 }
 
+/**
+ * pareto.csv が不正な場合はそのcaseをスキップする(run全体は失敗させない)。
+ */
 async function loadCase(caseDir: MinimalDirectoryHandle): Promise<NsgaCase | null> {
   const csvText = await readTextFile(caseDir, "pareto.csv");
   if (csvText === null) return null;
+
+  let solutions;
+  try {
+    solutions = parseParetoCsv(csvText);
+  } catch (err) {
+    console.warn(`pareto.csv の解析に失敗したためスキップします (${caseDir.name}):`, err);
+    return null;
+  }
 
   let config: CaseConfig = {};
   const configText = await readTextFile(caseDir, "config.json");
@@ -70,7 +81,7 @@ async function loadCase(caseDir: MinimalDirectoryHandle): Promise<NsgaCase | nul
     pairedValue: config.paired_value ?? null,
     pairedParamName: config.paired_param_name ?? null,
     legendLabel: config.legend_label ?? null,
-    solutions: parseParetoCsv(csvText),
+    solutions,
   };
 }
 
