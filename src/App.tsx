@@ -119,7 +119,7 @@ function App() {
   const [islShellRanges, setIslShellRanges] = useState<IslShellRange[]>(INITIAL_SHELL_RANGES);
   // External "open the panel on this tab" request (e.g. clicking the ISL HUD card)
   const [openTabRequest, setOpenTabRequest] = useState<{
-    tab: "editor" | "analysis" | "isl" | "option";
+    tab: "editor" | "analysis" | "isl" | "option" | "nsga2";
     nonce: number;
   } | null>(null);
 
