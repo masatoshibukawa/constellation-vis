@@ -36,6 +36,13 @@ import type { ViewSettings } from "../../lib/viewState";
  * callback.
  */
 
+/** サイドパネルの幅(px)の初期値・可動域。 */
+const DEFAULT_PANEL_WIDTH = 320;
+const MIN_PANEL_WIDTH = 280;
+const MAX_PANEL_WIDTH = 720;
+/** ユーザーが調整したパネル幅を次回起動時にも復元するためのlocalStorageキー。 */
+const PANEL_WIDTH_STORAGE_KEY = "constellation-vis:side-panel-width";
+
 interface Props {
   /** Called when the user clicks Update, with the newly committed scenario. */
   onUpdate: (scenario: CommittedScenario) => void;
@@ -239,6 +246,18 @@ export default function SatelliteEditor({
     return d.toISOString().slice(0, 16);
   });
   const [open, setOpen] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(() => {
+    if (typeof window === "undefined") return DEFAULT_PANEL_WIDTH;
+    try {
+      const saved = Number(window.localStorage.getItem(PANEL_WIDTH_STORAGE_KEY));
+      return Number.isFinite(saved) && saved >= MIN_PANEL_WIDTH && saved <= MAX_PANEL_WIDTH
+        ? saved
+        : DEFAULT_PANEL_WIDTH;
+    } catch {
+      return DEFAULT_PANEL_WIDTH;
+    }
+  });
+  const [isResizing, setIsResizing] = useState(false);
   const [tab, setTab] = useState<"editor" | "analysis" | "option" | "isl" | "nsga2">("editor");
   const [importOpen, setImportOpen] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
@@ -261,6 +280,42 @@ export default function SatelliteEditor({
     const timer = window.setTimeout(() => setUpdateFeedback("idle"), 1400);
     return () => window.clearTimeout(timer);
   }, [updateFeedback]);
+
+  // サイドパネル右端のリサイズハンドルをドラッグしている間、マウス移動に
+  // 合わせて panelWidth を更新する。ドラッグ中はハンドル以外でも追跡できる
+  // よう、リスナーを window に登録する(ハンドル要素上だけだと、素早く
+  // ドラッグした際にカーソルがハンドルから外れて追跡が止まってしまう)。
+  useEffect(() => {
+    if (!isResizing) return;
+    // ドラッグ中にパネル内のテキストなどが選択されてしまわないようにする。
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+    function handleMouseMove(e: MouseEvent) {
+      const next = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, e.clientX));
+      setPanelWidth(next);
+    }
+    function handleMouseUp() {
+      setIsResizing(false);
+    }
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
+  // 調整後の幅を次回起動時にも復元できるよう保存する。
+  // localStorageはプライベートブラウジング等で例外を投げることがあるため、
+  // 保存に失敗してもUIの動作自体は継続させる。
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PANEL_WIDTH_STORAGE_KEY, String(panelWidth));
+    } catch {
+      // 保存できなくても致命的ではないため無視する
+    }
+  }, [panelWidth]);
 
 
   function toggleGroup(g: string) {
@@ -410,7 +465,10 @@ export default function SatelliteEditor({
           <Menu className="h-5 w-5" />
         </button>
       )}
-      <div className={`side-panel ${open ? "" : "closed"}`}>
+      <div
+        className={`side-panel ${open ? "" : "closed"}`}
+        style={{ width: `${panelWidth}px` }}
+      >
         <div className="side-panel-header">
           <Tabs
             value={tab}
@@ -580,6 +638,13 @@ export default function SatelliteEditor({
             </TabsContent>
           </Tabs>
         </div>
+        <div
+          className="side-panel-resize-handle"
+          onMouseDown={() => setIsResizing(true)}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="パネル幅を変更"
+        />
       </div>
     </>
   );

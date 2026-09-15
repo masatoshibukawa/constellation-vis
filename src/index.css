@@ -722,7 +722,8 @@ h1 {
      for browsers that don't support dvh. */
   height: 100vh;
   height: 100dvh;
-  width: 320px;
+  /* width is set inline via style={{width}} so it can be resized by drag;
+     max-width still caps it on narrow viewports. */
   max-width: 85vw;
   background: rgba(17, 24, 39, 0.98);
   color: #f1f1f1;
@@ -735,6 +736,34 @@ h1 {
   border-right: 2px solid #374151;
   backdrop-filter: blur(12px);
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Drag handle for resizing the side panel width. Positioned over the
+   right border so the whole border reads as grabbable. */
+.side-panel-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 201;
+  /* Invisible by default; a subtle highlight on hover signals it's draggable
+     without adding a permanent visual seam to the panel edge. */
+  background: transparent;
+}
+
+.side-panel-resize-handle:hover,
+.side-panel-resize-handle:active {
+  background: rgba(234, 88, 12, 0.4);
+}
+
+/* Mobile: the panel already spans the full width, so a drag handle would
+   have nothing meaningful to resize against. */
+@media (max-width: 768px) {
+  .side-panel-resize-handle {
+    display: none;
+  }
 }
 
 .side-panel-header {
