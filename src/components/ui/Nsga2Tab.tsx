@@ -11,9 +11,11 @@
  * `parseConstellationConfig` → シェル配列操作 → `serializeConstellationConfig`
  * の一往復を行う。
  *
- * 「NSGA2タブ経由で追加した唯一のシェル」は mission_objective が
+ * 「NSGA2タブ経由で追加した唯一のシェル」は専用フィールド nsga2_provenance が
  * NSGA2_SHELL_MARKER のシェルとして識別し、連続してパレート解を切り替えても
  * シェルが増殖しないようにする(既存の他シェルはそのまま残す)。
+ * (nsga2_provenance は既存の「ミッション設計ウィザードの目的種別」フィールドである
+ * mission_objective とは別物であり、両者を混同しないよう分離してある。)
  */
 import { useMemo, useState } from "react";
 import { Button } from "./button";
