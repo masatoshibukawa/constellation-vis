@@ -33,6 +33,8 @@ function sizeLabel(derived: ShellDerived): string {
     case "lattice_flower":
     case "necklace_flower":
       return `Nc=${derived.nc}`;
+    case "tokyo_fc":
+      return `N_p=${derived.np}`;
   }
 }
 

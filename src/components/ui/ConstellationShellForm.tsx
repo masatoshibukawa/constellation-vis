@@ -458,6 +458,21 @@ function derivedItems(derived: ShellDerived, shell: ConstellationShell): Derived
         },
       );
       break;
+    case "tokyo_fc":
+      items.push(
+        { label: "周回数/日 (N_p)", value: String(derived.np) },
+        { label: "配置衛星数 (N_sat)", value: num(derived.nSat, 0) },
+        {
+          label: "解かれた半長軸",
+          value:
+            derived.solvedSemiMajorAxisKm === null
+              ? "解なし"
+              : num(derived.solvedSemiMajorAxisKm, 3, " km"),
+          tone: derived.solvedSemiMajorAxisKm === null ? "warn" : "normal",
+        },
+        { label: "位相係数 Q", value: num(derived.q, 6) },
+      );
+      break;
   }
 
   return items;
