@@ -19,7 +19,11 @@ import { useMemo, useState } from "react";
 import { Button } from "./button";
 import PanelSection from "./PanelSection";
 import { ParetoScatter, type ParetoAxisKey } from "../nsga2/ParetoScatter";
-import { discoverRunFromDirectoryHandle, isDirectoryPickerSupported } from "../../lib/nsga2Import/discoverRuns";
+import {
+  discoverRunFromDirectoryHandle,
+  isDirectoryPickerSupported,
+  type MinimalDirectoryHandle,
+} from "../../lib/nsga2Import/discoverRuns";
 import { NSGA2_SHELL_MARKER, paretoSolutionToShell } from "../../lib/nsga2Import/toShell";
 import type { NsgaRun } from "../../lib/nsga2Import/types";
 import { parseConstellationConfig, serializeConstellationConfig } from "../../lib/constellationSerializer";
@@ -40,10 +44,11 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const availableRuns = useMemo<NsgaRun[]>(
-    () => (manualRun ? [manualRun, ...NSGA2_BUILTIN_RUNS] : NSGA2_BUILTIN_RUNS),
-    [manualRun],
-  );
+  const availableRuns = useMemo<NsgaRun[]>(() => {
+    if (!manualRun) return NSGA2_BUILTIN_RUNS;
+    const builtinWithoutDuplicate = NSGA2_BUILTIN_RUNS.filter((r) => r.runId !== manualRun.runId);
+    return [manualRun, ...builtinWithoutDuplicate];
+  }, [manualRun]);
 
   const currentRun = availableRuns.find((r) => r.runId === runId) ?? null;
   const currentSweep = currentRun?.sweeps.find((s) => s.sweepId === sweepId) ?? null;
@@ -59,7 +64,9 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
     }
     try {
       // showDirectoryPicker は Chrome系のみ実装、DOM libに型が無い場合は any 経由で呼ぶ
-      const handle = await (window as unknown as { showDirectoryPicker: () => Promise<never> }).showDirectoryPicker();
+      const handle = await (
+        window as unknown as { showDirectoryPicker: () => Promise<MinimalDirectoryHandle> }
+      ).showDirectoryPicker();
       const run = await discoverRunFromDirectoryHandle(handle);
       setManualRun(run);
       setRunId(run.runId);
@@ -77,7 +84,7 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
     // 空コンステレーション)を返すので、constTextが空でも常にshells配列
     // (空配列の場合あり)を得られ、下のfindIndex/spread操作はそのまま動く。
     const config = parseConstellationConfig(constText);
-    const existingIndex = config.shells.findIndex((s) => s.mission_objective === NSGA2_SHELL_MARKER);
+    const existingIndex = config.shells.findIndex((s) => s.nsga2_provenance === NSGA2_SHELL_MARKER);
     const shellId = existingIndex >= 0 ? config.shells[existingIndex].id : crypto.randomUUID();
     const newShell = paretoSolutionToShell(selectedSolution, shellId);
 

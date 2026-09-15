@@ -120,6 +120,10 @@ export interface PatternShellInput {
   mission_lat_max?: number;
   mission_alt_min?: number;
   mission_alt_max?: number;
+
+  // --- NSGA2 import provenance (informational) ---
+  /** NSGA2タブ経由で追加したシェルを識別するマーカー。値は "nsga2-pareto-import" 固定。 */
+  nsga2_provenance?: string;
 }
 
 /** One satellite's Keplerian geometry (no epoch, no catalog number). */

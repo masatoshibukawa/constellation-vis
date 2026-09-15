@@ -36,6 +36,6 @@ export function paretoSolutionToShell(
     raan_start: solution.raan0Deg,
     mean_anomaly_0: solution.m0Deg,
     tfc_np: solution.nP,
-    mission_objective: NSGA2_SHELL_MARKER,
+    nsga2_provenance: NSGA2_SHELL_MARKER,
   };
 }

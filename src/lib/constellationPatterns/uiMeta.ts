@@ -173,6 +173,7 @@ export const UI_EXEMPT_KEYS: readonly string[] = [
   "mission_lat_max",
   "mission_alt_min",
   "mission_alt_max",
+  "nsga2_provenance",
 ];
 
 // --- shared field builders -------------------------------------------------

@@ -14,13 +14,13 @@
 import { parseParetoCsv } from "./parseParetoCsv";
 import type { NsgaCase, NsgaRun, NsgaSweep } from "./types";
 
-interface MinimalFileHandle {
+export interface MinimalFileHandle {
   kind: "file";
   name: string;
   getFile(): Promise<File>;
 }
 
-interface MinimalDirectoryHandle {
+export interface MinimalDirectoryHandle {
   kind: "directory";
   name: string;
   values(): AsyncIterableIterator<MinimalDirectoryHandle | MinimalFileHandle>;

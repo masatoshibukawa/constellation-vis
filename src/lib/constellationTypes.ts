@@ -75,6 +75,9 @@ export interface ConstellationShell {
   mission_lat_max?: number;
   mission_alt_min?: number;
   mission_alt_max?: number;
+
+  // --- NSGA2 import provenance ---
+  nsga2_provenance?: string;
 }
 
 export interface ConstellationConfig {

@@ -97,6 +97,6 @@ describe("paretoSolutionToShell", () => {
     expect(shell.mean_anomaly_0).toBeCloseTo(82.3558762069336, 9);
     expect(shell.eccentricity).toBe(0);
     expect(shell.argp).toBe(0);
-    expect(shell.mission_objective).toContain("nsga2");
+    expect(shell.nsga2_provenance).toBe("nsga2-pareto-import");
   });
 });

@@ -139,6 +139,9 @@ export const FIELD_REGISTRY: readonly FieldSpec[] = [
   { key: "mission_lat_max", kind: "number", patterns: "all", decimals: 2 },
   { key: "mission_alt_min", kind: "number", patterns: "all", decimals: 2 },
   { key: "mission_alt_max", kind: "number", patterns: "all", decimals: 2 },
+
+  // --- NSGA2 import provenance (informational, every pattern) ---
+  { key: "nsga2_provenance", kind: "string", patterns: "all" },
 ];
 
 const BY_KEY = new Map<string, FieldSpec>(FIELD_REGISTRY.map((f) => [f.key, f]));
