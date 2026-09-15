@@ -9,6 +9,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   migrateShellPattern,
+  safeDerived,
   syncDerivedFields,
 } from "../src/lib/constellationPatterns/migrate";
 import { latticeWalkerF, lfcNcFromWalker } from "../src/lib/constellationPatterns";
@@ -240,4 +241,22 @@ describe("syncDerivedFields", () => {
     const broken = { ...createNewShell("necklace_flower"), planes: Number.NaN };
     expect(syncDerivedFields(broken)).toEqual({});
   });
+});
+
+it("migrates walker_delta to tokyo_fc without throwing and fills tfc_np from the default template", () => {
+  const shell: ConstellationShell = {
+    id: "s1",
+    pattern: "walker_delta",
+    count: 24,
+    planes: 3,
+    phasing: 1,
+    apogee_altitude: 550,
+    inclination: 53,
+    raan_range: 360,
+  };
+  const migration = migrateShellPattern(shell, "tokyo_fc");
+  expect(migration.note).toBeTruthy();
+  const merged = { ...shell, ...migration.updates, pattern: "tokyo_fc" as const };
+  expect(() => safeDerived(merged)).not.toThrow();
+  expect(merged.tfc_np).toBeDefined();
 });
