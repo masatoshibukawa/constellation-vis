@@ -65,6 +65,7 @@ function App() {
   const [showGraticule, setShowGraticule] = useState(SAVED_DISPLAY?.showGraticule ?? true);
   const [showEcliptic, setShowEcliptic] = useState(SAVED_DISPLAY?.showEcliptic ?? true);
   const [showGeoOrbit, setShowGeoOrbit] = useState(SAVED_DISPLAY?.showGeoOrbit ?? false);
+  const [showAllOrbits, setShowAllOrbits] = useState(SAVED_DISPLAY?.showAllOrbits ?? false);
   const [showSunDirection, setShowSunDirection] = useState(SAVED_DISPLAY?.showSunDirection ?? true);
   const [ecef, setEcef] = useState(SAVED_DISPLAY?.ecef ?? false);
   const [showPerturbation, setShowPerturbation] = useState(SAVED_DISPLAY?.showPerturbation ?? false);
@@ -177,6 +178,7 @@ function App() {
     showGraticule,
     showEcliptic,
     showGeoOrbit,
+    showAllOrbits,
     showSunDirection,
     ecef,
     showPerturbation,
@@ -225,6 +227,7 @@ function App() {
     showGraticule,
     showEcliptic,
     showGeoOrbit,
+    showAllOrbits,
     showSunDirection,
     ecef,
     showPerturbation,
@@ -281,6 +284,7 @@ function App() {
     showGraticule,
     showEcliptic,
     showGeoOrbit,
+    showAllOrbits,
     showSunDirection,
     showGroundStationCones,
     showSatelliteFovCones,
@@ -321,6 +325,7 @@ function App() {
       setShowGraticule(d.showGraticule);
       setShowEcliptic(d.showEcliptic);
       setShowGeoOrbit(d.showGeoOrbit ?? false);
+      setShowAllOrbits(d.showAllOrbits ?? false);
       setShowSunDirection(d.showSunDirection);
       setEcef(d.ecef);
       setShowPerturbation(d.showPerturbation);
@@ -443,6 +448,8 @@ function App() {
         onShowEclipticChange={setShowEcliptic}
         showGeoOrbit={showGeoOrbit}
         onShowGeoOrbitChange={setShowGeoOrbit}
+        showAllOrbits={showAllOrbits}
+        onShowAllOrbitsChange={setShowAllOrbits}
         showSunDirection={showSunDirection}
         onShowSunDirectionChange={setShowSunDirection}
         showGroundStationCones={showGroundStationCones}

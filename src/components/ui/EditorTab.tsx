@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "./button";
+import { Checkbox } from "./checkbox";
+import { Label } from "./label";
 import { cn } from "../../lib/utils";
 import {
   Save,
@@ -14,6 +16,7 @@ import {
   Clock,
   FileCog,
   Check,
+  Orbit,
 } from "lucide-react";
 import ConstellationEditorDialog from "./ConstellationEditorDialog";
 import SatelliteTomlEditorDialog from "./SatelliteTomlEditorDialog";
@@ -35,6 +38,8 @@ interface Props {
   updateFeedback: "idle" | "success";
   onSaveBundle: () => void;
   onLoadBundle: (file: File) => void;
+  showAllOrbits: boolean;
+  onShowAllOrbitsChange: (v: boolean) => void;
 }
 
 // Cheap counters that scan the TOML text directly. We avoid the full parser
@@ -79,6 +84,8 @@ export default function EditorTab({
   updateFeedback,
   onSaveBundle,
   onLoadBundle,
+  showAllOrbits,
+  onShowAllOrbitsChange,
 }: Props) {
   const bundleInputRef = useRef<HTMLInputElement | null>(null);
   const [constEditorOpen, setConstEditorOpen] = useState(false);
@@ -151,6 +158,17 @@ export default function EditorTab({
           <Globe className="h-4 w-4" />
           CelesTrak からインポート
         </Button>
+        <div className="flex items-center space-x-2 pt-1">
+          <Checkbox
+            id="allOrbits"
+            checked={showAllOrbits}
+            onCheckedChange={(v) => onShowAllOrbitsChange(!!v)}
+          />
+          <Label htmlFor="allOrbits" className="text-sm font-normal cursor-pointer text-gray-200 flex items-center gap-1.5">
+            <Orbit className="h-3.5 w-3.5 text-gray-400" />
+            全衛星の軌道を表示
+          </Label>
+        </div>
       </PanelSection>
 
       <PanelSection title="開始時刻" icon={<Clock />}>

@@ -67,6 +67,10 @@ interface Props {
   showGeoOrbit: boolean;
   /** Called when geostationary orbit visibility changes */
   onShowGeoOrbitChange: (v: boolean) => void;
+  /** Show or hide every satellite's full orbit path */
+  showAllOrbits: boolean;
+  /** Called when all-satellite orbit visibility changes */
+  onShowAllOrbitsChange: (v: boolean) => void;
   /** Show or hide sun direction marker */
   showSunDirection: boolean;
   /** Called when sun direction visibility changes */
@@ -185,6 +189,8 @@ export default function SatelliteEditor({
   onShowEclipticChange,
   showGeoOrbit,
   onShowGeoOrbitChange,
+  showAllOrbits,
+  onShowAllOrbitsChange,
   showSunDirection,
   onShowSunDirectionChange,
   showGroundStationCones,
@@ -541,9 +547,11 @@ export default function SatelliteEditor({
                 updateFeedback={updateFeedback}
                 onSaveBundle={handleSaveBundle}
                 onLoadBundle={handleBundleFile}
+                showAllOrbits={showAllOrbits}
+                onShowAllOrbitsChange={onShowAllOrbitsChange}
               />
             </TabsContent>
-            
+
             <TabsContent value="analysis" className="mt-0 bg-gray-800/40 border-2 border-gray-600 rounded-lg p-6 shadow-inner">
               <AnalysisTab
                 satText={satText}

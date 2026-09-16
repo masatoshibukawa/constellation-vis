@@ -38,6 +38,7 @@ export interface DisplaySettings {
   showGraticule: boolean;
   showEcliptic: boolean;
   showGeoOrbit: boolean;
+  showAllOrbits: boolean;
   showSunDirection: boolean;
   ecef: boolean;
   showPerturbation: boolean;

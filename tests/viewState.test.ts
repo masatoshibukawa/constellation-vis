@@ -44,6 +44,7 @@ const DISPLAY: DisplaySettings = {
   showGraticule: true,
   showEcliptic: false,
   showGeoOrbit: false,
+  showAllOrbits: false,
   showSunDirection: true,
   ecef: true,
   showPerturbation: false,

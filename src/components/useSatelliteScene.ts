@@ -83,6 +83,7 @@ export function useSatelliteScene(
     params.showGraticule,
     params.showEcliptic,
     params.showGeoOrbit,
+    params.showAllOrbits,
     params.showSunDirection,
     params.showGroundStationCones,
     params.showSatelliteFovCones,

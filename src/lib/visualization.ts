@@ -91,6 +91,8 @@ export interface SatelliteSceneParams {
   showGraticule: boolean;
   showEcliptic: boolean;
   showGeoOrbit: boolean;
+  /** Show every satellite's full orbit path (one static ellipse per satellite) */
+  showAllOrbits: boolean;
   showSunDirection: boolean;
   showGroundStationCones: boolean;
   showSatelliteFovCones: boolean;
@@ -160,6 +162,15 @@ export default class SatelliteScene {
   private readonly graticule: THREE.LineSegments;
   private readonly ecliptic: THREE.Line;
   private readonly geoOrbit: THREE.Line;
+  /**
+   * 全衛星の軌道パスを1本の LineSegments にまとめたもの。GEOリング
+   * (`geoOrbit`)と異なり衛星ごとに軌道傾斜角・RAANが異なるため、各衛星の
+   * 平均運動からSGP4伝播で1周分の点列を求めて連結する。時刻に依存しない
+   * 静的な楕円として構築するため、`satellites`(構造的パラメータ)が
+   * 変わったときだけ作り直せばよく、visible切替は他のgeoOrbit等と同じ
+   * ライブ更新(updateParams)で行う。
+   */
+  private readonly allOrbits: THREE.LineSegments;
   private readonly sunDot: THREE.Mesh;
   private readonly sunlight: THREE.DirectionalLight;
   private readonly ambientLight: THREE.AmbientLight;
@@ -370,6 +381,10 @@ export default class SatelliteScene {
     });
 
     this.satRecs = this.params.satellites.map((spec) => toSatrec(spec));
+
+    this.allOrbits = this.buildAllOrbitLines();
+    this.allOrbits.visible = this.params.showAllOrbits;
+    this.scene.add(this.allOrbits);
 
     const satPositions = new Float32Array(this.satRecs.length * 3);
     const satColors = new Float32Array(this.satRecs.length * 3);
@@ -741,6 +756,7 @@ export default class SatelliteScene {
     this.graticule.visible = next.showGraticule;
     this.ecliptic.visible = next.showEcliptic;
     this.geoOrbit.visible = next.showGeoOrbit;
+    this.allOrbits.visible = next.showAllOrbits;
     this.sunDot.visible = next.showSunDirection;
 
     // Satellite point size.
@@ -883,6 +899,48 @@ export default class SatelliteScene {
   private clearSelections() {
     this.clearSatelliteSelection();
     this.selectStation(null);
+  }
+
+  /**
+   * 全衛星の1周分の軌道を1本の LineSegments として構築する。`updateTrack`
+   * (選択中の1機だけを毎フレーム更新)と異なり、時刻に依存しない静的な
+   * 楕円として現在時刻(構築時点)を起点に1回だけ計算する。衛星ごとに
+   * 独立した線分にするため、隣接点ペアをそのまま頂点配列に積む
+   * (`THREE.Line`のような単一の連続ポリラインにすると、ある衛星の
+   * 最後の点から次の衛星の最初の点まで誤って線が引かれてしまう)。
+   */
+  private buildAllOrbitLines(): THREE.LineSegments {
+    const ORBIT_POINTS_PER_SATELLITE = 90;
+    const verts: number[] = [];
+    for (const rec of this.satRecs) {
+      const periodMinutes = (2 * Math.PI) / rec.no;
+      const points: THREE.Vector3[] = [];
+      for (let i = 0; i <= ORBIT_POINTS_PER_SATELLITE; i += 1) {
+        const m = (periodMinutes * i) / ORBIT_POINTS_PER_SATELLITE;
+        const d = new Date(this.currentSimDate.getTime() + m * 60000);
+        const pv = satellite.propagate(rec, d);
+        if (!pv?.position) continue;
+        const { x, y, z } = pv.position;
+        points.push(
+          new THREE.Vector3(
+            x / EARTH_RADIUS_EQUATOR_KM,
+            z / EARTH_RADIUS_POLAR_KM,
+            -y / EARTH_RADIUS_EQUATOR_KM,
+          ),
+        );
+      }
+      for (let i = 0; i < points.length - 1; i += 1) {
+        verts.push(points[i].x, points[i].y, points[i].z, points[i + 1].x, points[i + 1].y, points[i + 1].z);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+    const material = new THREE.LineBasicMaterial({
+      color: this.params.whiteBackground ? 0x9ca3af : 0x60a5fa,
+      transparent: true,
+      opacity: 0.35,
+    });
+    return new THREE.LineSegments(geometry, material);
   }
 
   private updateTrack() {
@@ -1625,6 +1683,10 @@ export default class SatelliteScene {
     this.graticule.geometry.dispose();
     this.ecliptic.geometry.dispose();
     this.geoOrbit.geometry.dispose();
+    this.allOrbits.geometry.dispose();
+    if (this.allOrbits.material instanceof THREE.Material) {
+      this.allOrbits.material.dispose();
+    }
     this.sunDot.geometry.dispose();
     if (this.sunDot.material instanceof THREE.Material) {
       this.sunDot.material.dispose();
