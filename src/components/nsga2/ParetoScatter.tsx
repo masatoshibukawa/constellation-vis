@@ -18,14 +18,9 @@
  */
 import { useMemo, useRef } from "react";
 import ReactECharts from "echarts-for-react";
-import type { ParetoSolution } from "../../lib/nsga2Import/types";
+import type { ParetoAxisKey, ParetoSolution } from "../../lib/nsga2Import/types";
 
-export type ParetoAxisKey =
-  | "objNlaunch"
-  | "objCn0"
-  | "objMeanVisibleCount"
-  | "cn0DbHz"
-  | "meanVisibleCount";
+export type { ParetoAxisKey };
 
 const AXIS_LABELS: Record<ParetoAxisKey, string> = {
   objNlaunch: "打上げ回数 (Obj_Nlaunch)",
@@ -92,19 +87,24 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
       series: [
         {
           type: "scatter",
-          // クリックで選択しやすいよう、14pxからさらに拡大する。
+          // クリックで選択しやすいよう、以前の14px/20pxからさらに拡大する。
           // echartsのクリックヒット判定はシンボル形状に準拠するため、
-          // シンボル自体を拡大するのが最も確実な当たり判定拡大策になる。
-          symbolSize: 20,
+          // シンボル自体を拡大するのが視覚とクリック判定を両立できる
+          // 最も確実な方法になる(透明な当たり判定オーバーレイ用シリーズを
+          // 別途重ねる方式も検討したが、echartsのemphasis/tooltipは
+          // マウス直下のシリーズにのみ発火するため、透明レイヤーを前面に
+          // 置くと本来のシンボルのホバー演出が効かなくなる問題があり見送った)。
+          symbolSize: 28,
           data,
+          cursor: "pointer",
           itemStyle: {
             borderColor: (params: { dataIndex: number }) =>
               params.dataIndex === selectedIndex ? "#ffffff" : "transparent",
             borderWidth: 2,
           },
-          // ホバー時にわずかに拡大し、クリック可能であることを視覚的に示す。
+          // ホバー時に拡大し、クリック可能であることを視覚的に示す。
           emphasis: {
-            scale: 1.3,
+            scale: 1.4,
             itemStyle: { borderColor: "#ffffff", borderWidth: 2 },
           },
         },

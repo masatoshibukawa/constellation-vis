@@ -43,3 +43,38 @@ export interface NsgaRun {
   runId: string;
   sweeps: NsgaSweep[];
 }
+
+/** `ParetoScatter`/`ParetoSolutionTable` が使う2軸散布図の軸キー。 */
+export type ParetoAxisKey =
+  | "objNlaunch"
+  | "objCn0"
+  | "objMeanVisibleCount"
+  | "cn0DbHz"
+  | "meanVisibleCount";
+
+/**
+ * `Nsga2Tab` のデータソース選択〜パレート解選択までの状態。SatelliteEditor内の
+ * タブ切替はRadix TabsのTabsContentが非アクティブタブをアンマウントするため、
+ * この状態をNsga2Tab内のローカルuseStateに置くと他タブに切り替えて戻るたびに
+ * 初期化されてしまう。そのため呼び出し側(SatelliteEditor)に持ち上げて
+ * propsで受け渡す契約にしている。
+ */
+export interface Nsga2SelectionState {
+  manualRun: NsgaRun | null;
+  runId: string;
+  sweepId: string;
+  caseId: string;
+  xKey: ParetoAxisKey;
+  yKey: ParetoAxisKey;
+  selectedIndex: number | null;
+}
+
+export const DEFAULT_NSGA2_SELECTION_STATE: Nsga2SelectionState = {
+  manualRun: null,
+  runId: "",
+  sweepId: "",
+  caseId: "",
+  xKey: "objNlaunch",
+  yKey: "cn0DbHz",
+  selectedIndex: null,
+};

@@ -15,6 +15,7 @@ import AnalysisTab, { type AnalysisType } from "./AnalysisTab";
 import OptionTab from "./OptionTab";
 import IslTab from "./IslTab";
 import { Nsga2Tab } from "./Nsga2Tab";
+import { DEFAULT_NSGA2_SELECTION_STATE, type Nsga2SelectionState } from "../../lib/nsga2Import/types";
 import ImportDialog from "./ImportDialog";
 import type { IslPathResult, IslSettings, IslShellRange } from "../../lib/isl/types";
 import {
@@ -267,6 +268,11 @@ export default function SatelliteEditor({
   const [analysisRequest, setAnalysisRequest] = useState<{ type: AnalysisType; nonce: number } | null>(
     null,
   );
+  // NsgaTabのデータソース/選択解状態。Radix TabsのTabsContentは非アクティブ
+  // タブをアンマウントするため、Nsga2Tab内のローカルuseStateのままだと
+  // 他タブに切り替えて戻るたびに選択が初期化されてしまう。そのため親である
+  // このコンポーネントに持ち上げて、タブ切り替えをまたいで保持する。
+  const [nsga2Selection, setNsga2Selection] = useState<Nsga2SelectionState>(DEFAULT_NSGA2_SELECTION_STATE);
 
   useEffect(() => {
     if (!openTabRequest) return;
@@ -634,7 +640,12 @@ export default function SatelliteEditor({
             </TabsContent>
 
             <TabsContent value="nsga2" className="mt-0 bg-gray-800/40 border-2 border-gray-600 rounded-lg p-6 shadow-inner">
-              <Nsga2Tab constText={constText} onConstTextChange={setConstText} />
+              <Nsga2Tab
+                constText={constText}
+                onConstTextChange={setConstText}
+                selection={nsga2Selection}
+                onSelectionChange={setNsga2Selection}
+              />
             </TabsContent>
           </Tabs>
         </div>

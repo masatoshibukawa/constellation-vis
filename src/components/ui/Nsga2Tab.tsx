@@ -20,7 +20,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "./button";
 import PanelSection from "./PanelSection";
-import { ParetoScatter, type ParetoAxisKey } from "../nsga2/ParetoScatter";
+import { ParetoScatter } from "../nsga2/ParetoScatter";
 import { ParetoSolutionTable } from "../nsga2/ParetoSolutionTable";
 import {
   discoverRunFromDirectoryHandle,
@@ -28,24 +28,24 @@ import {
   type MinimalDirectoryHandle,
 } from "../../lib/nsga2Import/discoverRuns";
 import { NSGA2_SHELL_MARKER, paretoSolutionToShell } from "../../lib/nsga2Import/toShell";
-import type { NsgaRun } from "../../lib/nsga2Import/types";
+import type { NsgaRun, ParetoAxisKey, Nsga2SelectionState } from "../../lib/nsga2Import/types";
 import { parseConstellationConfig, serializeConstellationConfig } from "../../lib/constellationSerializer";
 import NSGA2_BUILTIN_RUNS from "../../lib/nsga2Runs.generated";
 
 export interface Nsga2TabProps {
   constText: string;
   onConstTextChange: (text: string) => void;
+  selection: Nsga2SelectionState;
+  onSelectionChange: (next: Nsga2SelectionState) => void;
 }
 
-export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
-  const [manualRun, setManualRun] = useState<NsgaRun | null>(null);
-  const [runId, setRunId] = useState<string>("");
-  const [sweepId, setSweepId] = useState<string>("");
-  const [caseId, setCaseId] = useState<string>("");
-  const [xKey, setXKey] = useState<ParetoAxisKey>("objNlaunch");
-  const [yKey, setYKey] = useState<ParetoAxisKey>("cn0DbHz");
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+export function Nsga2Tab({ constText, onConstTextChange, selection, onSelectionChange }: Nsga2TabProps) {
+  const { manualRun, runId, sweepId, caseId, xKey, yKey, selectedIndex } = selection;
   const [error, setError] = useState<string | null>(null);
+
+  function patch(partial: Partial<Nsga2SelectionState>) {
+    onSelectionChange({ ...selection, ...partial });
+  }
 
   const availableRuns = useMemo<NsgaRun[]>(() => {
     if (!manualRun) return NSGA2_BUILTIN_RUNS;
@@ -71,11 +71,13 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
         window as unknown as { showDirectoryPicker: () => Promise<MinimalDirectoryHandle> }
       ).showDirectoryPicker();
       const run = await discoverRunFromDirectoryHandle(handle);
-      setManualRun(run);
-      setRunId(run.runId);
-      setSweepId(run.sweeps[0]?.sweepId ?? "");
-      setCaseId(run.sweeps[0]?.cases[0]?.caseId ?? "");
-      setSelectedIndex(null);
+      patch({
+        manualRun: run,
+        runId: run.runId,
+        sweepId: run.sweeps[0]?.sweepId ?? "",
+        caseId: run.sweeps[0]?.cases[0]?.caseId ?? "",
+        selectedIndex: null,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "フォルダの読み込みに失敗しました。");
     }
@@ -101,11 +103,9 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
 
   function stepSolution(delta: number) {
     if (solutions.length === 0) return;
-    setSelectedIndex((prev) => {
-      const base = prev ?? 0;
-      const next = (base + delta + solutions.length) % solutions.length;
-      return next;
-    });
+    const base = selectedIndex ?? 0;
+    const next = (base + delta + solutions.length) % solutions.length;
+    patch({ selectedIndex: next });
   }
 
   return (
@@ -116,10 +116,7 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
             className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm"
             value={runId}
             onChange={(e) => {
-              setRunId(e.target.value);
-              setSweepId("");
-              setCaseId("");
-              setSelectedIndex(null);
+              patch({ runId: e.target.value, sweepId: "", caseId: "", selectedIndex: null });
             }}
           >
             <option value="">ラン組み込み一覧から選択...</option>
@@ -148,9 +145,7 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
               className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm"
               value={sweepId}
               onChange={(e) => {
-                setSweepId(e.target.value);
-                setCaseId("");
-                setSelectedIndex(null);
+                patch({ sweepId: e.target.value, caseId: "", selectedIndex: null });
               }}
             >
               <option value="">sweepを選択...</option>
@@ -165,8 +160,7 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
                 className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm"
                 value={caseId}
                 onChange={(e) => {
-                  setCaseId(e.target.value);
-                  setSelectedIndex(null);
+                  patch({ caseId: e.target.value, selectedIndex: null });
                 }}
               >
                 <option value="">caseを選択...</option>
@@ -189,7 +183,7 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
               <select
                 className="ml-1 bg-gray-900 border border-gray-600 rounded px-1"
                 value={xKey}
-                onChange={(e) => setXKey(e.target.value as ParetoAxisKey)}
+                onChange={(e) => patch({ xKey: e.target.value as ParetoAxisKey })}
               >
                 <option value="objNlaunch">打上げ回数</option>
                 <option value="cn0DbHz">C/N0</option>
@@ -201,7 +195,7 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
               <select
                 className="ml-1 bg-gray-900 border border-gray-600 rounded px-1"
                 value={yKey}
-                onChange={(e) => setYKey(e.target.value as ParetoAxisKey)}
+                onChange={(e) => patch({ yKey: e.target.value as ParetoAxisKey })}
               >
                 <option value="objNlaunch">打上げ回数</option>
                 <option value="cn0DbHz">C/N0</option>
@@ -210,20 +204,20 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
             </label>
           </div>
           <div className="flex flex-col md:flex-row gap-3">
-            <div style={{ height: 320 }} className="md:flex-1 min-w-0">
+            <div style={{ height: 480 }} className="md:flex-1 min-w-0">
               <ParetoScatter
                 solutions={solutions}
                 xKey={xKey}
                 yKey={yKey}
                 selectedIndex={selectedIndex}
-                onSelect={setSelectedIndex}
+                onSelect={(index) => patch({ selectedIndex: index })}
               />
             </div>
             <div className="md:flex-1 min-w-0">
               <ParetoSolutionTable
                 solutions={solutions}
                 selectedIndex={selectedIndex}
-                onSelect={setSelectedIndex}
+                onSelect={(index) => patch({ selectedIndex: index })}
               />
             </div>
           </div>
