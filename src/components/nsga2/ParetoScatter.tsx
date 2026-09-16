@@ -92,8 +92,10 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
       series: [
         {
           type: "scatter",
-          // クリックで選択しやすいよう、既存の10pxから拡大する。
-          symbolSize: 14,
+          // クリックで選択しやすいよう、14pxからさらに拡大する。
+          // echartsのクリックヒット判定はシンボル形状に準拠するため、
+          // シンボル自体を拡大するのが最も確実な当たり判定拡大策になる。
+          symbolSize: 20,
           data,
           itemStyle: {
             borderColor: (params: { dataIndex: number }) =>
