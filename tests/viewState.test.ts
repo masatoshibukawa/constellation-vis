@@ -66,9 +66,16 @@ const DISPLAY: DisplaySettings = {
   isl: createDefaultIslSettings(),
 };
 
+// happy-dom (他のテストファイルがpreloadで登録するDOM環境) はブラウザ同様に
+// localStorage を読み取り専用グローバルとして定義するため、単純な代入
+// (`globalThis.localStorage = ...`) では上書きできない。defineProperty で
+// configurable な差し替えを行う。
 beforeEach(() => {
-  (globalThis as unknown as { localStorage: MemoryStorage }).localStorage =
-    new MemoryStorage();
+  Object.defineProperty(globalThis, "localStorage", {
+    value: new MemoryStorage(),
+    configurable: true,
+    writable: true,
+  });
 });
 
 afterEach(() => {
