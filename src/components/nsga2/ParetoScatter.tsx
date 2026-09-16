@@ -84,6 +84,13 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
         textStyle: { color: "#f1f1f1", fontSize: 11 },
         inRange: { color: ["#1f77ff", "#ed6d00"] },
       },
+      // マウスホイール/トラックパッドのスクロールでズームできるようにする。
+      // "inside"はドラッグでのパン移動も併せて有効にする。ズームを戻す
+      // 手段が無いと迷子になるため、ダブルクリックで全体表示に戻す。
+      dataZoom: [
+        { type: "inside", xAxisIndex: 0, filterMode: "none" },
+        { type: "inside", yAxisIndex: 0, filterMode: "none" },
+      ],
       series: [
         {
           type: "scatter",
@@ -113,20 +120,34 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
   }, [solutions, xKey, yKey, selectedIndex]);
 
   return (
-    <ReactECharts
-      ref={chartRef}
-      option={option}
-      notMerge={true}
-      theme="dark"
-      style={{ height: "100%", width: "100%", minHeight: 320 }}
-      onEvents={{
-        // seriesIndexが無い(軸や余白など、データ点以外)のクリックでは
-        // dataIndexが不定な値になりうるため、series上のクリックのみ反映する。
-        click: (params: { componentType?: string; seriesIndex?: number; dataIndex: number }) => {
-          if (params.componentType !== "series" || params.seriesIndex !== 0) return;
-          onSelect(params.dataIndex);
-        },
-      }}
-    />
+    <div className="relative h-full w-full">
+      <ReactECharts
+        ref={chartRef}
+        option={option}
+        notMerge={true}
+        theme="dark"
+        style={{ height: "100%", width: "100%", minHeight: 320 }}
+        onEvents={{
+          // seriesIndexが無い(軸や余白など、データ点以外)のクリックでは
+          // dataIndexが不定な値になりうるため、series上のクリックのみ反映する。
+          click: (params: { componentType?: string; seriesIndex?: number; dataIndex: number }) => {
+            if (params.componentType !== "series" || params.seriesIndex !== 0) return;
+            onSelect(params.dataIndex);
+          },
+          // スクロールでズームインした後に迷子にならないよう、ダブルクリックで
+          // 全体表示に戻せるようにする。
+          dblclick: () => {
+            chartRef.current?.getEchartsInstance().dispatchAction({
+              type: "dataZoom",
+              start: 0,
+              end: 100,
+            });
+          },
+        }}
+      />
+      <p className="absolute bottom-1 right-2 text-[10px] text-gray-500 pointer-events-none">
+        スクロールで拡大 / ダブルクリックで全体表示に戻す
+      </p>
+    </div>
   );
 }

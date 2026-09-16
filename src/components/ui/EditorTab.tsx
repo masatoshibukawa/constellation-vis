@@ -16,7 +16,7 @@ import {
   Clock,
   FileCog,
   Check,
-  Orbit,
+  Eye,
 } from "lucide-react";
 import ConstellationEditorDialog from "./ConstellationEditorDialog";
 import SatelliteTomlEditorDialog from "./SatelliteTomlEditorDialog";
@@ -40,6 +40,33 @@ interface Props {
   onLoadBundle: (file: File) => void;
   showAllOrbits: boolean;
   onShowAllOrbitsChange: (v: boolean) => void;
+  /** Show or hide ground station visibility cones (通信可能範囲) */
+  showGroundStationCones: boolean;
+  onShowGroundStationConesChange: (v: boolean) => void;
+  /** Show or hide satellite FOV cones (各衛星のコーン) */
+  showSatelliteFovCones: boolean;
+  onShowSatelliteFovConesChange: (v: boolean) => void;
+}
+
+function DisplayToggle({
+  id,
+  checked,
+  onChange,
+  label,
+}: {
+  id: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center space-x-2">
+      <Checkbox id={id} checked={checked} onCheckedChange={(v) => onChange(!!v)} />
+      <Label htmlFor={id} className="text-sm font-normal cursor-pointer text-gray-200">
+        {label}
+      </Label>
+    </div>
+  );
 }
 
 // Cheap counters that scan the TOML text directly. We avoid the full parser
@@ -86,6 +113,10 @@ export default function EditorTab({
   onLoadBundle,
   showAllOrbits,
   onShowAllOrbitsChange,
+  showGroundStationCones,
+  onShowGroundStationConesChange,
+  showSatelliteFovCones,
+  onShowSatelliteFovConesChange,
 }: Props) {
   const bundleInputRef = useRef<HTMLInputElement | null>(null);
   const [constEditorOpen, setConstEditorOpen] = useState(false);
@@ -158,17 +189,30 @@ export default function EditorTab({
           <Globe className="h-4 w-4" />
           CelesTrak からインポート
         </Button>
-        <div className="flex items-center space-x-2 pt-1">
-          <Checkbox
-            id="allOrbits"
-            checked={showAllOrbits}
-            onCheckedChange={(v) => onShowAllOrbitsChange(!!v)}
-          />
-          <Label htmlFor="allOrbits" className="text-sm font-normal cursor-pointer text-gray-200 flex items-center gap-1.5">
-            <Orbit className="h-3.5 w-3.5 text-gray-400" />
-            全衛星の軌道を表示
-          </Label>
-        </div>
+      </PanelSection>
+
+      <PanelSection title="3D表示" icon={<Eye />}>
+        <DisplayToggle
+          id="allOrbits"
+          checked={showAllOrbits}
+          onChange={onShowAllOrbitsChange}
+          label="全衛星の軌道を表示"
+        />
+        <DisplayToggle
+          id="scenarioGsCones"
+          checked={showGroundStationCones}
+          onChange={onShowGroundStationConesChange}
+          label="通信可能範囲を表示"
+        />
+        <DisplayToggle
+          id="scenarioFovCones"
+          checked={showSatelliteFovCones}
+          onChange={onShowSatelliteFovConesChange}
+          label="各衛星のコーンを表示"
+        />
+        <p className="text-[11px] text-gray-500">
+          色や角度などの詳細設定は「通信」「表示」タブで調整できます。
+        </p>
       </PanelSection>
 
       <PanelSection title="開始時刻" icon={<Clock />}>

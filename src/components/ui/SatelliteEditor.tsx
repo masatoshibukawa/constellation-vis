@@ -549,6 +549,10 @@ export default function SatelliteEditor({
                 onLoadBundle={handleBundleFile}
                 showAllOrbits={showAllOrbits}
                 onShowAllOrbitsChange={onShowAllOrbitsChange}
+                showGroundStationCones={showGroundStationCones}
+                onShowGroundStationConesChange={onShowGroundStationConesChange}
+                showSatelliteFovCones={showSatelliteFovCones}
+                onShowSatelliteFovConesChange={onShowSatelliteFovConesChange}
               />
             </TabsContent>
 
