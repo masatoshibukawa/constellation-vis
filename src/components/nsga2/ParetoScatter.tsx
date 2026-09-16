@@ -16,7 +16,7 @@
  * ヘッドフル両方、および animation: false での回避を検証済み)。そのため
  * オプション全体で animation を無効化している。
  */
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactECharts from "echarts-for-react";
 import type { ParetoAxisKey, ParetoSolution } from "../../lib/nsga2Import/types";
 
@@ -40,6 +40,17 @@ export interface ParetoScatterProps {
 
 export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }: ParetoScatterProps) {
   const chartRef = useRef<InstanceType<typeof ReactECharts> | null>(null);
+  // ズーム範囲(0-100のパーセンテージ)をstateで保持する。option全体を
+  // useMemoで再生成し notMerge={true} で渡しているため、この値を option に
+  // 含めておかないと、点の選択(selectedIndexの変化)など他の要因で option が
+  // 再生成されるたびに dataZoom が 0-100(全体表示)へ勝手に戻ってしまう。
+  const [zoomRange, setZoomRange] = useState({ start: 0, end: 100 });
+
+  // 表示するデータ集合や軸が変わったら、直前のズーム範囲を引き継がず
+  // 全体表示に戻す(別のcase/軸に切り替えたのに拡大されたままだと紛らわしい)。
+  useEffect(() => {
+    setZoomRange({ start: 0, end: 100 });
+  }, [solutions, xKey, yKey]);
 
   const option = useMemo(() => {
     const data = solutions.map((s, i) => [s[xKey], s[yKey], s.meanVisibleCount, i]);
@@ -99,6 +110,8 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
           zoomOnMouseWheel: true,
           moveOnMouseMove: true,
           moveOnMouseWheel: false,
+          start: zoomRange.start,
+          end: zoomRange.end,
         },
         {
           type: "inside",
@@ -107,6 +120,8 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
           zoomOnMouseWheel: true,
           moveOnMouseMove: true,
           moveOnMouseWheel: false,
+          start: zoomRange.start,
+          end: zoomRange.end,
         },
       ],
       series: [
@@ -135,7 +150,7 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
         },
       ],
     };
-  }, [solutions, xKey, yKey, selectedIndex]);
+  }, [solutions, xKey, yKey, selectedIndex, zoomRange]);
 
   return (
     <div className="relative h-full w-full">
@@ -155,11 +170,16 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
           // スクロールでズームインした後に迷子にならないよう、ダブルクリックで
           // 全体表示に戻せるようにする。
           dblclick: () => {
-            chartRef.current?.getEchartsInstance().dispatchAction({
-              type: "dataZoom",
-              start: 0,
-              end: 100,
-            });
+            setZoomRange({ start: 0, end: 100 });
+          },
+          // ユーザーがホイール/ドラッグでズーム・パンした結果をstateに保存する。
+          // これを怠ると、option再生成のたびにdataZoomが全体表示にリセットされ、
+          // 「一瞬拡大されるがすぐ戻る」ように見えてしまう。
+          datazoom: (params: { batch?: { start: number; end: number }[]; start?: number; end?: number }) => {
+            const zoom = params.batch?.[0] ?? params;
+            if (typeof zoom.start === "number" && typeof zoom.end === "number") {
+              setZoomRange({ start: zoom.start, end: zoom.end });
+            }
           },
         }}
       />
