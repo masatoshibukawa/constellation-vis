@@ -49,4 +49,42 @@ describe("ParetoSolutionTable", () => {
     const selectedRow = screen.getByText("30").closest("tr");
     expect(selectedRow?.className).toContain("bg-amber-900/40");
   });
+
+  it("sorts rows by column and preserves the original index for onSelect", () => {
+    const solutions = [
+      makeSolution({ objNlaunch: 30 }),
+      makeSolution({ objNlaunch: 10 }),
+      makeSolution({ objNlaunch: 20 }),
+    ];
+    const onSelect = mock(() => {});
+    render(<ParetoSolutionTable solutions={solutions} selectedIndex={null} onSelect={onSelect} />);
+
+    fireEvent.click(screen.getByText("打上げ回数"));
+
+    const rows = screen.getAllByRole("row").slice(1); // ヘッダー行を除く
+    const firstDataCell = rows[0].querySelectorAll("td")[1];
+    expect(firstDataCell.textContent).toBe("10");
+
+    // 昇順で先頭に来た行(元のsolutions[1]、objNlaunch=10)をクリックしたら、
+    // 表示順(0番目)ではなく元配列上のインデックス(1)がonSelectに渡ること。
+    fireEvent.click(rows[0]);
+    expect(onSelect).toHaveBeenCalledWith(1);
+  });
+
+  it("reverses sort direction on a second click of the same column", () => {
+    const solutions = [
+      makeSolution({ objNlaunch: 10 }),
+      makeSolution({ objNlaunch: 30 }),
+      makeSolution({ objNlaunch: 20 }),
+    ];
+    render(<ParetoSolutionTable solutions={solutions} selectedIndex={null} onSelect={() => {}} />);
+
+    const header = screen.getByText("打上げ回数");
+    fireEvent.click(header); // asc: 10, 20, 30
+    fireEvent.click(header); // desc: 30, 20, 10
+
+    const rows = screen.getAllByRole("row").slice(1);
+    const firstDataCell = rows[0].querySelectorAll("td")[1];
+    expect(firstDataCell.textContent).toBe("30");
+  });
 });

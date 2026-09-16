@@ -15,9 +15,29 @@
  * まま描画されない不具合が実際に発生することを確認した(Playwrightのヘッドレス/
  * ヘッドフル両方、および animation: false での回避を検証済み)。そのため
  * オプション全体で animation を無効化している。
+ *
+ * 注意: dataZoom(type: "inside")の標準ドラッグ/ホイール機能は使わない。
+ * zrenderのclickイベントは「mousedown時にホバーしていた要素」と
+ * 「mouseup時にホバーしていた要素」が一致することを条件にしており
+ * (node_modules/zrender/lib/Handler.js の `_downEl !== _upEl` チェック)、
+ * dataZoom(inside)の内蔵ジェスチャー(ホイール/ドラッグ)を有効にすると
+ * この判定と競合し、通常のクリック操作でもclickイベントが発火しなくなる
+ * 不具合を実機検証で確認した(moveOnMouseMoveをfalseにしても再現した)。
+ * そのため zoomOnMouseWheel/moveOnMouseMove/moveOnMouseWheel を全て無効化
+ * し、ズームはコンテナのwheelイベントを自前でリッスンしてReact stateの
+ * zoomRangeを直接更新する方式にしている。ドラッグでのパン移動は今回
+ * スコープ外(ホイールズーム+ボタンズームのみ)。
+ *
+ * 注意: このコンポーネントはReact.memoでラップしている。親のNsga2Tabが
+ * memo化されていても、祖先(SatelliteEditor)がcurrentSimMs(3Dシミュレー
+ * ション時刻、毎フレーム更新)を受け取っており、Nsga2Tabがmemo化される前は
+ * その再レンダリングがここまで連鎖してechartsのcanvasを高頻度で作り直し、
+ * mousedown〜mouseup間でDOM要素が入れ替わってclickイベントが合成されない
+ * 不具合の一因になっていた。二重の防御としてこちらもmemo化している。
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactECharts from "echarts-for-react";
+import { ZoomIn, ZoomOut } from "lucide-react";
 import type { ParetoAxisKey, ParetoSolution } from "../../lib/nsga2Import/types";
 
 export type { ParetoAxisKey };
@@ -38,8 +58,19 @@ export interface ParetoScatterProps {
   onSelect: (index: number) => void;
 }
 
-export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }: ParetoScatterProps) {
+const MIN_ZOOM_SPAN = 5; // これ以上は縮小できない(0-100スケール)、無限にズームインさせない
+const WHEEL_ZOOM_STEP = 0.1; // ホイール1回あたりのズーム量(現在のスパンに対する比率)
+const BUTTON_ZOOM_STEP = 0.2;
+
+export const ParetoScatter = memo(function ParetoScatter({
+  solutions,
+  xKey,
+  yKey,
+  selectedIndex,
+  onSelect,
+}: ParetoScatterProps) {
   const chartRef = useRef<InstanceType<typeof ReactECharts> | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   // ズーム範囲(0-100のパーセンテージ)をstateで保持する。option全体を
   // useMemoで再生成し notMerge={true} で渡しているため、この値を option に
   // 含めておかないと、点の選択(selectedIndexの変化)など他の要因で option が
@@ -51,6 +82,41 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
   useEffect(() => {
     setZoomRange({ start: 0, end: 100 });
   }, [solutions, xKey, yKey]);
+
+  const zoomBy = useCallback((factor: number, centerPercent?: number) => {
+    setZoomRange((prev) => {
+      const span = prev.end - prev.start;
+      const center = centerPercent ?? (prev.start + prev.end) / 2;
+      const nextSpan = Math.min(100, Math.max(MIN_ZOOM_SPAN, span * (1 - factor)));
+      let start = center - (nextSpan * (center - prev.start)) / span;
+      let end = start + nextSpan;
+      if (start < 0) {
+        end -= start;
+        start = 0;
+      }
+      if (end > 100) {
+        start -= end - 100;
+        end = 100;
+      }
+      return { start: Math.max(0, start), end: Math.min(100, end) };
+    });
+  }, []);
+
+  // ホイールイベントを自前でリッスンし、dispatchAction経由でズームする。
+  // dataZoom(inside)の内蔵ホイール処理を使わないことで、zrenderのclick
+  // イベント判定(mousedown/mouseup間のホバー要素比較)との競合を避ける。
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    function handleWheel(e: WheelEvent) {
+      e.preventDefault();
+      const rect = container!.getBoundingClientRect();
+      const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+      zoomBy(e.deltaY < 0 ? WHEEL_ZOOM_STEP : -WHEEL_ZOOM_STEP, xPercent);
+    }
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [zoomBy]);
 
   const option = useMemo(() => {
     const data = solutions.map((s, i) => [s[xKey], s[yKey], s.meanVisibleCount, i]);
@@ -95,20 +161,18 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
         textStyle: { color: "#f1f1f1", fontSize: 11 },
         inRange: { color: ["#1f77ff", "#ed6d00"] },
       },
-      // マウスホイール/トラックパッドのスクロールでズームできるようにする。
-      // "inside"はドラッグでのパン移動も併せて有効にする。ズームを戻す
-      // 手段が無いと迷子になるため、ダブルクリックで全体表示に戻す。
-      // zoomOnMouseWheelはデフォルトtrueだが、Ctrl修飾なしの素のホイールで
-      // 確実に反応させるため明示しておく。moveOnMouseMoveをfalseにして
-      // 通常のマウス移動でチャートが動いてしまわないようにする(ドラッグ時のみ
-      // パン)。
+      // dataZoomは「表示範囲を保持するモデル」としてのみ使う。ユーザー操作の
+      // 入口(ホイール/ボタン)はコンポーネント側で自前実装し、start/endを
+      // stateとして直接渡す。内蔵ジェスチャー(ホイール/ドラッグ)は
+      // zoomOnMouseWheel/moveOnMouseMove/moveOnMouseWheelを全てfalseにして
+      // 明示的に無効化し、zrenderのclickイベント判定との競合を避ける。
       dataZoom: [
         {
           type: "inside",
           xAxisIndex: 0,
           filterMode: "none",
-          zoomOnMouseWheel: true,
-          moveOnMouseMove: true,
+          zoomOnMouseWheel: false,
+          moveOnMouseMove: false,
           moveOnMouseWheel: false,
           start: zoomRange.start,
           end: zoomRange.end,
@@ -117,8 +181,8 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
           type: "inside",
           yAxisIndex: 0,
           filterMode: "none",
-          zoomOnMouseWheel: true,
-          moveOnMouseMove: true,
+          zoomOnMouseWheel: false,
+          moveOnMouseMove: false,
           moveOnMouseWheel: false,
           start: zoomRange.start,
           end: zoomRange.end,
@@ -130,10 +194,7 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
           // クリックで選択しやすいよう、以前の14px/20pxからさらに拡大する。
           // echartsのクリックヒット判定はシンボル形状に準拠するため、
           // シンボル自体を拡大するのが視覚とクリック判定を両立できる
-          // 最も確実な方法になる(透明な当たり判定オーバーレイ用シリーズを
-          // 別途重ねる方式も検討したが、echartsのemphasis/tooltipは
-          // マウス直下のシリーズにのみ発火するため、透明レイヤーを前面に
-          // 置くと本来のシンボルのホバー演出が効かなくなる問題があり見送った)。
+          // 最も確実な方法になる。
           symbolSize: 28,
           data,
           cursor: "pointer",
@@ -153,7 +214,7 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
   }, [solutions, xKey, yKey, selectedIndex, zoomRange]);
 
   return (
-    <div className="relative h-full w-full">
+    <div ref={containerRef} className="relative h-full w-full">
       <ReactECharts
         ref={chartRef}
         option={option}
@@ -161,10 +222,8 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
         theme="dark"
         style={{ height: "100%", width: "100%", minHeight: 320 }}
         onEvents={{
-          // seriesIndexが無い(軸や余白など、データ点以外)のクリックでは
-          // dataIndexが不定な値になりうるため、series上のクリックのみ反映する。
-          click: (params: { componentType?: string; seriesIndex?: number; dataIndex: number }) => {
-            if (params.componentType !== "series" || params.seriesIndex !== 0) return;
+          click: (params: { componentType?: string; dataIndex?: number }) => {
+            if (typeof params.dataIndex !== "number") return;
             onSelect(params.dataIndex);
           },
           // スクロールでズームインした後に迷子にならないよう、ダブルクリックで
@@ -172,20 +231,31 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
           dblclick: () => {
             setZoomRange({ start: 0, end: 100 });
           },
-          // ユーザーがホイール/ドラッグでズーム・パンした結果をstateに保存する。
-          // これを怠ると、option再生成のたびにdataZoomが全体表示にリセットされ、
-          // 「一瞬拡大されるがすぐ戻る」ように見えてしまう。
-          datazoom: (params: { batch?: { start: number; end: number }[]; start?: number; end?: number }) => {
-            const zoom = params.batch?.[0] ?? params;
-            if (typeof zoom.start === "number" && typeof zoom.end === "number") {
-              setZoomRange({ start: zoom.start, end: zoom.end });
-            }
-          },
         }}
       />
+      <div className="absolute top-1 right-1 flex flex-col gap-0.5">
+        <button
+          type="button"
+          onClick={() => zoomBy(BUTTON_ZOOM_STEP)}
+          className="p-1 rounded bg-gray-800/80 border border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700"
+          title="拡大"
+          aria-label="拡大"
+        >
+          <ZoomIn className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => zoomBy(-BUTTON_ZOOM_STEP)}
+          className="p-1 rounded bg-gray-800/80 border border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700"
+          title="縮小"
+          aria-label="縮小"
+        >
+          <ZoomOut className="h-3.5 w-3.5" />
+        </button>
+      </div>
       <p className="absolute bottom-1 right-2 text-[10px] text-gray-500 pointer-events-none">
-        スクロールで拡大 / ダブルクリックで全体表示に戻す
+        クリックで選択 / スクロールで拡大 / ダブルクリックで全体表示に戻す
       </p>
     </div>
   );
-}
+});

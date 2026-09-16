@@ -17,7 +17,7 @@
  * (nsga2_provenance は既存の「ミッション設計ウィザードの目的種別」フィールドである
  * mission_objective とは別物であり、両者を混同しないよう分離してある。)
  */
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Button } from "./button";
 import PanelSection from "./PanelSection";
 import { ParetoScatter } from "../nsga2/ParetoScatter";
@@ -39,13 +39,43 @@ export interface Nsga2TabProps {
   onSelectionChange: (next: Nsga2SelectionState) => void;
 }
 
-export function Nsga2Tab({ constText, onConstTextChange, selection, onSelectionChange }: Nsga2TabProps) {
+/**
+ * React.memoでラップしている理由: このタブの親 SatelliteEditor は
+ * currentSimMs(3Dシミュレーション時刻、毎フレーム更新される)を含む多数の
+ * propsを受け取っており、それが更新されるたびに再レンダリングされる。
+ * memo化していないと、その再レンダリングがNsga2Tab配下のechartsパレート
+ * 解散布図(ParetoScatter)にまで連鎖し、canvas要素が高頻度で作り直される。
+ * その結果、mousedown〜mouseup間でDOM要素インスタンスが入れ替わってしまい、
+ * ブラウザのネイティブclickイベントが合成されず「点をクリックしても選択
+ * できない」不具合が実機検証で確認された。constText/selectionの値が
+ * 実際に変わらない限り再レンダリングを止めることで解消する。
+ */
+export const Nsga2Tab = memo(function Nsga2Tab({
+  constText,
+  onConstTextChange,
+  selection,
+  onSelectionChange,
+}: Nsga2TabProps) {
   const { manualRun, runId, sweepId, caseId, xKey, yKey, selectedIndex } = selection;
   const [error, setError] = useState<string | null>(null);
 
-  function patch(partial: Partial<Nsga2SelectionState>) {
-    onSelectionChange({ ...selection, ...partial });
-  }
+  const patch = useCallback(
+    (partial: Partial<Nsga2SelectionState>) => {
+      onSelectionChange({ ...selection, ...partial });
+    },
+    [selection, onSelectionChange],
+  );
+
+  // ParetoScatter/ParetoSolutionTableに渡すonSelectを安定した参照にする。
+  // インライン関数のままだとNsga2Tab自体が再レンダリングされるたびに
+  // 新しい関数が生成され、それらの子コンポーネントがReact.memoされていても
+  // 再レンダリングを止められなくなる。
+  const handleSelect = useCallback(
+    (index: number) => {
+      patch({ selectedIndex: index });
+    },
+    [patch],
+  );
 
   const availableRuns = useMemo<NsgaRun[]>(() => {
     if (!manualRun) return NSGA2_BUILTIN_RUNS;
@@ -210,14 +240,14 @@ export function Nsga2Tab({ constText, onConstTextChange, selection, onSelectionC
                 xKey={xKey}
                 yKey={yKey}
                 selectedIndex={selectedIndex}
-                onSelect={(index) => patch({ selectedIndex: index })}
+                onSelect={handleSelect}
               />
             </div>
             <div className="md:flex-1 min-w-0">
               <ParetoSolutionTable
                 solutions={solutions}
                 selectedIndex={selectedIndex}
-                onSelect={(index) => patch({ selectedIndex: index })}
+                onSelect={handleSelect}
               />
             </div>
           </div>
@@ -259,4 +289,4 @@ export function Nsga2Tab({ constText, onConstTextChange, selection, onSelectionC
       )}
     </div>
   );
-}
+});
