@@ -887,6 +887,17 @@ export default class SatelliteScene {
     this.resetShadowTrack();
   }
 
+  /**
+   * UI(軌道タブ等)から任意の衛星インデックスを選択状態にする公開API。
+   * 3Dビュー上でクリックして選択したときと同じ処理(軌道ハイライト、
+   * シャドウトラックのリセット、onSelectコールバック呼び出し)を行う。
+   * カメラは動かさない — 選択中の衛星が画面外にあっても視点はそのまま。
+   */
+  selectSatelliteByIndex(idx: number) {
+    if (idx < 0 || idx >= this.satRecs.length) return;
+    this.selectSatellite(idx);
+  }
+
   private clearSatelliteSelection() {
     this.selectedIndex = null;
     this.hasCachedSelection = false;

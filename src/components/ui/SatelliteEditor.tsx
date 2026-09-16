@@ -564,7 +564,7 @@ export default function SatelliteEditor({
             </TabsContent>
 
             <TabsContent value="orbit" className="mt-0 bg-gray-800/40 border-2 border-gray-600 rounded-lg p-6 shadow-inner">
-              <OrbitTab satellites={satellites} />
+              <OrbitTab satellites={satellites} sceneRef={sceneRef} />
             </TabsContent>
 
             <TabsContent value="analysis" className="mt-0 bg-gray-800/40 border-2 border-gray-600 rounded-lg p-6 shadow-inner">
