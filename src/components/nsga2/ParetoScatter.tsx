@@ -87,9 +87,27 @@ export function ParetoScatter({ solutions, xKey, yKey, selectedIndex, onSelect }
       // マウスホイール/トラックパッドのスクロールでズームできるようにする。
       // "inside"はドラッグでのパン移動も併せて有効にする。ズームを戻す
       // 手段が無いと迷子になるため、ダブルクリックで全体表示に戻す。
+      // zoomOnMouseWheelはデフォルトtrueだが、Ctrl修飾なしの素のホイールで
+      // 確実に反応させるため明示しておく。moveOnMouseMoveをfalseにして
+      // 通常のマウス移動でチャートが動いてしまわないようにする(ドラッグ時のみ
+      // パン)。
       dataZoom: [
-        { type: "inside", xAxisIndex: 0, filterMode: "none" },
-        { type: "inside", yAxisIndex: 0, filterMode: "none" },
+        {
+          type: "inside",
+          xAxisIndex: 0,
+          filterMode: "none",
+          zoomOnMouseWheel: true,
+          moveOnMouseMove: true,
+          moveOnMouseWheel: false,
+        },
+        {
+          type: "inside",
+          yAxisIndex: 0,
+          filterMode: "none",
+          zoomOnMouseWheel: true,
+          moveOnMouseMove: true,
+          moveOnMouseWheel: false,
+        },
       ],
       series: [
         {

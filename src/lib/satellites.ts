@@ -76,6 +76,55 @@ export function toSatrec(spec: SatelliteSpec): satellite.SatRec {
   return satellite.twoline2satrec(l1, l2);
 }
 
+/** Equatorial radius of Earth in kilometres (matches `visualization.ts`). */
+const EARTH_RADIUS_EQUATOR_KM = 6378.137;
+const MINUTES_PER_DAY = 1440;
+
+/**
+ * SatRec由来の古典軌道6要素。角度は度、長さはkm。`satellite.SatRec`は
+ * 角度をラジアン、平均運動をrad/minで保持しているため、表示用にすべて
+ * 変換したスナップショットとして提供する。
+ */
+export interface ClassicalOrbitalElements {
+  /** 長半径 [km] */
+  semiMajorAxisKm: number;
+  /** 離心率 */
+  eccentricity: number;
+  /** 軌道傾斜角 [deg] */
+  inclinationDeg: number;
+  /** 昇交点赤経(RAAN) [deg] */
+  raanDeg: number;
+  /** 近地点引数 [deg] */
+  argPerigeeDeg: number;
+  /** 平均近点角 [deg] */
+  meanAnomalyDeg: number;
+  /** 平均運動 [rev/day] */
+  meanMotionRevPerDay: number;
+  /** 軌道周期 [分] */
+  periodMinutes: number;
+}
+
+/** Extract classical orbital elements (degrees/km) from a satrec for display. */
+export function orbitalElementsFromSatrec(rec: satellite.SatRec): ClassicalOrbitalElements {
+  const RAD2DEG = 180 / Math.PI;
+  const periodMinutes = (2 * Math.PI) / rec.no;
+  return {
+    semiMajorAxisKm: rec.a * EARTH_RADIUS_EQUATOR_KM,
+    eccentricity: rec.ecco,
+    inclinationDeg: rec.inclo * RAD2DEG,
+    raanDeg: rec.nodeo * RAD2DEG,
+    argPerigeeDeg: rec.argpo * RAD2DEG,
+    meanAnomalyDeg: rec.mo * RAD2DEG,
+    meanMotionRevPerDay: MINUTES_PER_DAY / periodMinutes,
+    periodMinutes,
+  };
+}
+
+/** Best-effort display name for a satellite: object name, else catalog number. */
+export function satelliteDisplayName(spec: SatelliteSpec, satnum: string): string {
+  return spec.meta?.objectName?.trim() || `#${satnum}`;
+}
+
 /** List of satellites used by the demo. */
 import satellites, { SHELL_RANGES } from "./satellites.generated";
 

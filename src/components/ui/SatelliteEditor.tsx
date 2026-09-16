@@ -11,6 +11,7 @@ import {
 } from "../../lib/config";
 import { buildConstellation } from "../../lib/tomlParsers";
 import EditorTab from "./EditorTab";
+import OrbitTab from "./OrbitTab";
 import AnalysisTab, { type AnalysisType } from "./AnalysisTab";
 import OptionTab from "./OptionTab";
 import IslTab from "./IslTab";
@@ -174,7 +175,7 @@ interface Props {
   /** Current simulation time (ms), used to compute elapsed time since last switch */
   currentSimMs: number;
   /** External request to open the panel on a specific tab (e.g. from the ISL HUD). */
-  openTabRequest?: { tab: "editor" | "analysis" | "isl" | "option" | "nsga2"; nonce: number } | null;
+  openTabRequest?: { tab: "editor" | "orbit" | "analysis" | "isl" | "option" | "nsga2"; nonce: number } | null;
 }
 
 export default function SatelliteEditor({
@@ -265,7 +266,7 @@ export default function SatelliteEditor({
     }
   });
   const [isResizing, setIsResizing] = useState(false);
-  const [tab, setTab] = useState<"editor" | "analysis" | "option" | "isl" | "nsga2">("editor");
+  const [tab, setTab] = useState<"editor" | "orbit" | "analysis" | "option" | "isl" | "nsga2">("editor");
   const [importOpen, setImportOpen] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
@@ -484,15 +485,21 @@ export default function SatelliteEditor({
         <div className="side-panel-header">
           <Tabs
             value={tab}
-            onValueChange={(value) => setTab(value as "editor" | "analysis" | "option" | "isl" | "nsga2")}
+            onValueChange={(value) => setTab(value as "editor" | "orbit" | "analysis" | "option" | "isl" | "nsga2")}
             className="flex-1 min-w-0"
           >
-            <TabsList className="grid w-full grid-cols-5 h-10 bg-gray-700/80 rounded-lg p-1 shadow-inner border border-gray-600">
+            <TabsList className="grid w-full grid-cols-6 h-10 bg-gray-700/80 rounded-lg p-1 shadow-inner border border-gray-600">
               <TabsTrigger
                 value="editor"
                 className="data-[state=active]:!bg-orange-600 data-[state=active]:!text-orange-50 data-[state=active]:!shadow-sm data-[state=active]:!border-transparent hover:bg-gray-600/60 text-gray-200 transition-colors rounded-md font-medium"
               >
                 シナリオ
+              </TabsTrigger>
+              <TabsTrigger
+                value="orbit"
+                className="data-[state=active]:!bg-orange-600 data-[state=active]:!text-orange-50 data-[state=active]:!shadow-sm data-[state=active]:!border-transparent hover:bg-gray-600/60 text-gray-200 transition-colors rounded-md font-medium"
+              >
+                軌道
               </TabsTrigger>
               <TabsTrigger
                 value="isl"
@@ -531,7 +538,7 @@ export default function SatelliteEditor({
           </Button>
         </div>
         <div className="side-panel-content">
-          <Tabs value={tab} onValueChange={(value) => setTab(value as "editor" | "analysis" | "option" | "isl" | "nsga2")} className="w-full">
+          <Tabs value={tab} onValueChange={(value) => setTab(value as "editor" | "orbit" | "analysis" | "option" | "isl" | "nsga2")} className="w-full">
             <TabsContent value="editor" className="mt-0 bg-gray-800/40 border-2 border-gray-600 rounded-lg p-6 shadow-inner">
               <EditorTab
                 satText={satText}
@@ -554,6 +561,10 @@ export default function SatelliteEditor({
                 showSatelliteFovCones={showSatelliteFovCones}
                 onShowSatelliteFovConesChange={onShowSatelliteFovConesChange}
               />
+            </TabsContent>
+
+            <TabsContent value="orbit" className="mt-0 bg-gray-800/40 border-2 border-gray-600 rounded-lg p-6 shadow-inner">
+              <OrbitTab satellites={satellites} />
             </TabsContent>
 
             <TabsContent value="analysis" className="mt-0 bg-gray-800/40 border-2 border-gray-600 rounded-lg p-6 shadow-inner">
