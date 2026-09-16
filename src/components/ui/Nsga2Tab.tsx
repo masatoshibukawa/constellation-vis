@@ -21,6 +21,7 @@ import { useMemo, useState } from "react";
 import { Button } from "./button";
 import PanelSection from "./PanelSection";
 import { ParetoScatter, type ParetoAxisKey } from "../nsga2/ParetoScatter";
+import { ParetoSolutionTable } from "../nsga2/ParetoSolutionTable";
 import {
   discoverRunFromDirectoryHandle,
   isDirectoryPickerSupported,
@@ -208,14 +209,23 @@ export function Nsga2Tab({ constText, onConstTextChange }: Nsga2TabProps) {
               </select>
             </label>
           </div>
-          <div style={{ height: 320 }}>
-            <ParetoScatter
-              solutions={solutions}
-              xKey={xKey}
-              yKey={yKey}
-              selectedIndex={selectedIndex}
-              onSelect={setSelectedIndex}
-            />
+          <div className="flex flex-col md:flex-row gap-3">
+            <div style={{ height: 320 }} className="md:flex-1 min-w-0">
+              <ParetoScatter
+                solutions={solutions}
+                xKey={xKey}
+                yKey={yKey}
+                selectedIndex={selectedIndex}
+                onSelect={setSelectedIndex}
+              />
+            </div>
+            <div className="md:flex-1 min-w-0">
+              <ParetoSolutionTable
+                solutions={solutions}
+                selectedIndex={selectedIndex}
+                onSelect={setSelectedIndex}
+              />
+            </div>
           </div>
         </PanelSection>
       )}

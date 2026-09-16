@@ -34,7 +34,7 @@ describe("ParetoSolutionTable", () => {
 
   it("calls onSelect with the row index when a row is clicked", () => {
     const solutions = [makeSolution({ objNlaunch: 23 }), makeSolution({ objNlaunch: 30 })];
-    const onSelect = mock((_index: number) => {});
+    const onSelect = mock(() => {});
     render(<ParetoSolutionTable solutions={solutions} selectedIndex={null} onSelect={onSelect} />);
 
     fireEvent.click(screen.getByText("30").closest("tr")!);

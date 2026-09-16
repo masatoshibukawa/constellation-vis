@@ -34,3 +34,6 @@ public/assets/satellites.toml
 public/assets/constellation.toml
 
 local
+
+# Claude Code visual brainstorming companion
+.superpowers/
