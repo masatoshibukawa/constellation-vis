@@ -773,7 +773,9 @@ interface RowSpec {
 }
 
 const ROWS: RowSpec[] = [
-  { label: "由来 (run/sweep/case)", format: (e) => `${e.origin.runId} / ${e.origin.sweepId} / ${e.origin.caseId}` },
+  { label: "Run", format: (e) => e.origin.runId },
+  { label: "Sweep", format: (e) => e.origin.sweepId },
+  { label: "Case", format: (e) => e.origin.caseId },
   { label: "Gen / Pop", format: (e) => `${e.solution.gen} / ${e.solution.pop}` },
   { label: "打上げ回数", format: (e) => `${e.solution.objNlaunch}` },
   { label: "C/N0", format: (e) => `${e.solution.cn0DbHz.toFixed(3)} dBHz` },
