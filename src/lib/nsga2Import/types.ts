@@ -52,6 +52,19 @@ export type ParetoAxisKey =
   | "cn0DbHz"
   | "meanVisibleCount";
 
+/** 比較カートに追加した解が、どのrun/sweep/caseから選ばれたかを示す由来情報。 */
+export interface ParetoSolutionOrigin {
+  runId: string;
+  sweepId: string;
+  caseId: string;
+}
+
+/** 比較カートの1エントリ。解のスナップショットと由来情報を保持する。 */
+export interface ComparedSolution {
+  solution: ParetoSolution;
+  origin: ParetoSolutionOrigin;
+}
+
 /**
  * `Nsga2Tab` のデータソース選択〜パレート解選択までの状態。SatelliteEditor内の
  * タブ切替はRadix TabsのTabsContentが非アクティブタブをアンマウントするため、
@@ -67,6 +80,7 @@ export interface Nsga2SelectionState {
   xKey: ParetoAxisKey;
   yKey: ParetoAxisKey;
   selectedIndex: number | null;
+  compareCart: ComparedSolution[];
 }
 
 export const DEFAULT_NSGA2_SELECTION_STATE: Nsga2SelectionState = {
@@ -77,4 +91,5 @@ export const DEFAULT_NSGA2_SELECTION_STATE: Nsga2SelectionState = {
   xKey: "objNlaunch",
   yKey: "cn0DbHz",
   selectedIndex: null,
+  compareCart: [],
 };
