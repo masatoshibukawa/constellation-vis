@@ -28,6 +28,8 @@ import {
   type MinimalDirectoryHandle,
 } from "../../lib/nsga2Import/discoverRuns";
 import { NSGA2_SHELL_MARKER, paretoSolutionToShell } from "../../lib/nsga2Import/toShell";
+import { addToCompareCart, removeFromCompareCart } from "../../lib/nsga2Import/compareCart";
+import { Nsga2CompareTable } from "../nsga2/Nsga2CompareTable";
 import type { NsgaRun, ParetoAxisKey, Nsga2SelectionState } from "../../lib/nsga2Import/types";
 import { parseConstellationConfig, serializeConstellationConfig } from "../../lib/constellationSerializer";
 import NSGA2_BUILTIN_RUNS from "../../lib/nsga2Runs.generated";
@@ -56,7 +58,7 @@ export const Nsga2Tab = memo(function Nsga2Tab({
   selection,
   onSelectionChange,
 }: Nsga2TabProps) {
-  const { manualRun, runId, sweepId, caseId, xKey, yKey, selectedIndex } = selection;
+  const { manualRun, runId, sweepId, caseId, xKey, yKey, selectedIndex, compareCart } = selection;
   const [error, setError] = useState<string | null>(null);
 
   const patch = useCallback(
@@ -88,6 +90,22 @@ export const Nsga2Tab = memo(function Nsga2Tab({
   const currentCase = currentSweep?.cases.find((c) => c.caseId === caseId) ?? null;
   const solutions = currentCase?.solutions ?? [];
   const selectedSolution = selectedIndex !== null ? solutions[selectedIndex] : null;
+
+  const handleAddToCompare = useCallback(() => {
+    if (!selectedSolution) return;
+    patch({ compareCart: addToCompareCart(compareCart, selectedSolution, { runId, sweepId, caseId }) });
+  }, [selectedSolution, compareCart, runId, sweepId, caseId, patch]);
+
+  const handleRemoveFromCompare = useCallback(
+    (index: number) => {
+      patch({ compareCart: removeFromCompareCart(compareCart, index) });
+    },
+    [compareCart, patch],
+  );
+
+  const handleClearCompare = useCallback(() => {
+    patch({ compareCart: [] });
+  }, [patch]);
 
   async function handleOpenFolder() {
     setError(null);
@@ -281,12 +299,23 @@ export const Nsga2Tab = memo(function Nsga2Tab({
             <Button type="button" variant="outline" size="sm" onClick={() => stepSolution(1)}>
               次へ
             </Button>
+            <Button type="button" variant="outline" size="sm" onClick={handleAddToCompare}>
+              比較に追加
+            </Button>
             <Button type="button" size="sm" onClick={applySelectedSolution}>
               この解をコンステレーションに反映
             </Button>
           </div>
         </PanelSection>
       )}
+
+      <PanelSection title={`比較 (${compareCart.length} 件)`}>
+        <Nsga2CompareTable
+          entries={compareCart}
+          onRemove={handleRemoveFromCompare}
+          onClear={handleClearCompare}
+        />
+      </PanelSection>
     </div>
   );
 });
