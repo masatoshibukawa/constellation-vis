@@ -45,6 +45,19 @@ const GEO_RADIUS_KM = 42164;
 const MAX_SHADOW_COORDS = 144000; // 100 days at 1 minute intervals
 
 const STATION_CONE_SEGMENTS = 32;
+
+/**
+ * 地上局コーンの底面半径を計算する。`minElevationDeg`(地上局ごとの最低仰角)
+ * と正規化された高さ `heightNorm` から、円錐の開き角を求める。実際の可視性
+ * 判定(visualization.ts内のvisible = look.elevation > minElevationRads)と
+ * 同じ角度を使うことで、見た目のコーンと判定基準を一致させる。
+ */
+export function computeGroundConeBaseRadius(minElevationDeg: number, heightNorm: number): number {
+  const minEl = THREE.MathUtils.clamp(minElevationDeg, 0, 89.9);
+  const halfAngle = THREE.MathUtils.degToRad(90 - minEl);
+  return heightNorm * Math.tan(halfAngle);
+}
+
 const FOV_CONE_SEGMENTS = 32;
 const DOWN_AXIS = new THREE.Vector3(0, -1, 0);
 const UP_AXIS = new THREE.Vector3(0, 1, 0);
@@ -96,7 +109,6 @@ export interface SatelliteSceneParams {
   showSunDirection: boolean;
   showGroundStationCones: boolean;
   showSatelliteFovCones: boolean;
-  groundConeMinElevationDeg: number;
   /** Ground cone range expressed in Earth radii */
   groundConeLength: number;
   groundConeColor: string;
@@ -420,11 +432,9 @@ export default class SatelliteScene {
     this.stationConeMaterials = [];
     this.stationConeMeshes = [];
     const heightNorm = Math.max(this.params.groundConeLength, 0.01);
-    this.stationMeshes = this.params.groundStations.map(() => {
+    this.stationMeshes = this.params.groundStations.map((gs) => {
       const mesh = new THREE.Mesh(this.stationGeo, this.stationMat);
-      const minEl = THREE.MathUtils.clamp(this.params.groundConeMinElevationDeg, 0, 89.9);
-      const halfAngle = THREE.MathUtils.degToRad(90 - minEl);
-      const baseRadius = heightNorm * Math.tan(halfAngle);
+      const baseRadius = computeGroundConeBaseRadius(gs.minElevationDeg, heightNorm);
       const coneGeo = new THREE.ConeGeometry(
         baseRadius,
         1,
@@ -797,16 +807,16 @@ export default class SatelliteScene {
       });
     }
 
-    // Ground-station cone geometry depends on the min-elevation and range.
-    if (
-      next.groundConeMinElevationDeg !== prev.groundConeMinElevationDeg ||
-      next.groundConeLength !== prev.groundConeLength
-    ) {
+    // Ground-station cone geometry depends on the range (per-station min
+    // elevation changes go through the groundStations array, which triggers
+    // a full scene rebuild in useSatelliteScene rather than this diff path).
+    if (next.groundConeLength !== prev.groundConeLength) {
       const heightNorm = Math.max(next.groundConeLength, 0.01);
-      const minEl = THREE.MathUtils.clamp(next.groundConeMinElevationDeg, 0, 89.9);
-      const halfAngle = THREE.MathUtils.degToRad(90 - minEl);
-      const baseRadius = heightNorm * Math.tan(halfAngle);
       this.stationConeMeshes.forEach((mesh, idx) => {
+        const baseRadius = computeGroundConeBaseRadius(
+          next.groundStations[idx].minElevationDeg,
+          heightNorm,
+        );
         const geo = new THREE.ConeGeometry(baseRadius, 1, STATION_CONE_SEGMENTS, 1, true);
         geo.translate(0, -0.5, 0);
         this.stationConeGeometries[idx].dispose();
