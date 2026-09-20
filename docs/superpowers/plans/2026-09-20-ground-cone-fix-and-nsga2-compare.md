@@ -224,8 +224,8 @@ describe("computeGroundConeBaseRadius", () => {
     expect(radius).toBeLessThan(0.02);
   });
 
-  it("仰角0度では底面半径は heightNorm と等しい(45度開口)", () => {
-    const radius = computeGroundConeBaseRadius(0, 1);
+  it("仰角45度では底面半径は heightNorm と等しい(45度開口)", () => {
+    const radius = computeGroundConeBaseRadius(45, 1);
     expect(radius).toBeCloseTo(1, 5);
   });
 
@@ -609,7 +609,8 @@ function isSameEntry(entry: ComparedSolution, solution: ParetoSolution, origin: 
   return (
     isSameOrigin(entry.origin, origin) &&
     entry.solution.gen === solution.gen &&
-    entry.solution.pop === solution.pop
+    entry.solution.pop === solution.pop &&
+    entry.solution.objNlaunch === solution.objNlaunch
   );
 }
 
