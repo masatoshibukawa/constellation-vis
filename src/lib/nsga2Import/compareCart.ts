@@ -20,7 +20,7 @@ function isSameEntry(entry: ComparedSolution, solution: ParetoSolution, origin: 
   );
 }
 
-/** 解をカートに追加する。同じ由来・同じ解(gen/popが一致)はすでに入っていれば追加しない。 */
+/** 解をカートに追加する。同じ由来・同じ解(gen/pop/objNlaunchが一致)はすでに入っていれば追加しない。 */
 export function addToCompareCart(
   cart: ComparedSolution[],
   solution: ParetoSolution,
