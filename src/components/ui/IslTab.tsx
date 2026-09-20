@@ -39,8 +39,6 @@ interface Props {
   /** Ground-station communication cone display (通信タブへ移設した表示設定) */
   showGroundStationCones: boolean;
   onShowGroundStationConesChange: (v: boolean) => void;
-  groundConeMinElevationDeg: number;
-  onGroundConeMinElevationDegChange: (v: number) => void;
   groundConeDistanceKm: number;
   onGroundConeDistanceKmChange: (v: number) => void;
   groundConeColor: string;
@@ -74,8 +72,6 @@ export default function IslTab({
   onOpenTimelineAnalysis,
   showGroundStationCones,
   onShowGroundStationConesChange,
-  groundConeMinElevationDeg,
-  onGroundConeMinElevationDegChange,
   groundConeDistanceKm,
   onGroundConeDistanceKmChange,
   groundConeColor,
@@ -165,15 +161,9 @@ export default function IslTab({
         </div>
         {showGroundStationCones && (
           <>
-            <InlineSlider
-              label="最小仰角"
-              value={groundConeMinElevationDeg}
-              min={0}
-              max={85}
-              step={1}
-              format={(v) => `${v.toFixed(0)}°`}
-              onChange={onGroundConeMinElevationDegChange}
-            />
+            <p className="text-[11px] text-gray-500">
+              コーンの開き角は各地上局の「最低仰角」設定(地上局編集ダイアログ)にそれぞれ従います。
+            </p>
             <InlineSlider
               label="距離上限"
               value={groundConeDistanceKm}

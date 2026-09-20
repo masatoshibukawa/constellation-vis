@@ -80,9 +80,6 @@ function App() {
   const [showSatelliteFovCones, setShowSatelliteFovCones] = useState(
     SAVED_DISPLAY?.showSatelliteFovCones ?? false,
   );
-  const [groundConeMinElevationDeg, setGroundConeMinElevationDeg] = useState(
-    SAVED_DISPLAY?.groundConeMinElevationDeg ?? 30,
-  );
   const [groundConeDistanceKm, setGroundConeDistanceKm] = useState(
     SAVED_DISPLAY?.groundConeDistanceKm ?? 1000,
   );
@@ -187,7 +184,6 @@ function App() {
     whiteBackground,
     showGroundStationCones,
     showSatelliteFovCones,
-    groundConeMinElevationDeg,
     groundConeDistanceKm,
     groundConeColor,
     fovConeHalfAngleDeg,
@@ -236,7 +232,6 @@ function App() {
     whiteBackground,
     showGroundStationCones,
     showSatelliteFovCones,
-    groundConeMinElevationDeg,
     groundConeDistanceKm,
     groundConeColor,
     fovConeHalfAngleDeg,
@@ -288,7 +283,6 @@ function App() {
     showSunDirection,
     showGroundStationCones,
     showSatelliteFovCones,
-    groundConeMinElevationDeg,
     groundConeLength,
     groundConeColor,
     fovConeHalfAngleDeg,
@@ -334,7 +328,6 @@ function App() {
       setWhiteBackground(d.whiteBackground);
       setShowGroundStationCones(d.showGroundStationCones);
       setShowSatelliteFovCones(d.showSatelliteFovCones);
-      setGroundConeMinElevationDeg(d.groundConeMinElevationDeg);
       setGroundConeDistanceKm(d.groundConeDistanceKm);
       setGroundConeColor(d.groundConeColor);
       setFovConeHalfAngleDeg(d.fovConeHalfAngleDeg);
@@ -456,8 +449,6 @@ function App() {
         onShowGroundStationConesChange={setShowGroundStationCones}
         showSatelliteFovCones={showSatelliteFovCones}
         onShowSatelliteFovConesChange={setShowSatelliteFovCones}
-        groundConeMinElevationDeg={groundConeMinElevationDeg}
-        onGroundConeMinElevationDegChange={setGroundConeMinElevationDeg}
         groundConeDistanceKm={groundConeDistanceKm}
         onGroundConeDistanceKmChange={setGroundConeDistanceKm}
         groundConeColor={groundConeColor}

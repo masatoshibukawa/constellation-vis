@@ -84,10 +84,6 @@ interface Props {
   showSatelliteFovCones: boolean;
   /** Called when satellite FOV cone visibility changes */
   onShowSatelliteFovConesChange: (v: boolean) => void;
-  /** Minimum elevation for ground station visibility cones (degrees) */
-  groundConeMinElevationDeg: number;
-  /** Called when ground station cone min elevation changes */
-  onGroundConeMinElevationDegChange: (v: number) => void;
   /** Ground station visibility cone cutoff distance in kilometres */
   groundConeDistanceKm: number;
   /** Called when ground cone distance changes */
@@ -198,8 +194,6 @@ export default function SatelliteEditor({
   onShowGroundStationConesChange,
   showSatelliteFovCones,
   onShowSatelliteFovConesChange,
-  groundConeMinElevationDeg,
-  onGroundConeMinElevationDegChange,
   groundConeDistanceKm,
   onGroundConeDistanceKmChange,
   groundConeColor,
@@ -606,8 +600,6 @@ export default function SatelliteEditor({
                 }}
                 showGroundStationCones={showGroundStationCones}
                 onShowGroundStationConesChange={onShowGroundStationConesChange}
-                groundConeMinElevationDeg={groundConeMinElevationDeg}
-                onGroundConeMinElevationDegChange={onGroundConeMinElevationDegChange}
                 groundConeDistanceKm={groundConeDistanceKm}
                 onGroundConeDistanceKmChange={onGroundConeDistanceKmChange}
                 groundConeColor={groundConeColor}

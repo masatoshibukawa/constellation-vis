@@ -47,7 +47,6 @@ export interface DisplaySettings {
   whiteBackground: boolean;
   showGroundStationCones: boolean;
   showSatelliteFovCones: boolean;
-  groundConeMinElevationDeg: number;
   groundConeDistanceKm: number;
   groundConeColor: string;
   fovConeHalfAngleDeg: number;

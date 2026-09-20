@@ -53,7 +53,6 @@ const DISPLAY: DisplaySettings = {
   whiteBackground: true,
   showGroundStationCones: true,
   showSatelliteFovCones: false,
-  groundConeMinElevationDeg: 25,
   groundConeDistanceKm: 1500,
   groundConeColor: "#3ec7a1",
   fovConeHalfAngleDeg: 30,
