@@ -10,5 +10,7 @@ import type { ConstellationShell } from "../constellationTypes";
 import type { SatelliteSpec } from "../satellites";
 
 export function shellToSatellites(shell: ConstellationShell, epoch: Date): SatelliteSpec[] {
+  // satnumStart=1固定: 各比較カードは独立したSatelliteSceneインスタンス(独立した
+  // SatelliteSpec[]配列)を持つため、カード間でsatnumが重複しても表示・計算に影響しない。
   return generateShell(shell, epoch, 1).specs;
 }

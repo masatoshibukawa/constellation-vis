@@ -3,6 +3,7 @@ import { describe, it, expect } from "bun:test";
 import { shellToSatellites } from "../src/lib/nsga2Import/shellToSatellites";
 import { paretoSolutionToShell } from "../src/lib/nsga2Import/toShell";
 import type { ParetoSolution } from "../src/lib/nsga2Import/types";
+import { toSatrec } from "../src/lib/satellites";
 
 function makeSolution(overrides: Partial<ParetoSolution> = {}): ParetoSolution {
   return {
@@ -36,6 +37,8 @@ describe("shellToSatellites", () => {
     const shell = paretoSolutionToShell(solution, "test-shell-id-2");
     const specs = shellToSatellites(shell, new Date("2025-01-01T00:00:00Z"));
     expect(specs.length).toBeGreaterThan(0);
-    expect(specs[0]).toHaveProperty("type");
+    const satrec = toSatrec(specs[0]);
+    expect(Number.isNaN(satrec.no)).toBe(false);
+    expect(Number.isNaN(satrec.a)).toBe(false);
   });
 });
