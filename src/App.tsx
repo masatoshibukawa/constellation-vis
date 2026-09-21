@@ -431,6 +431,7 @@ function App() {
         }
       />
       <SatelliteEditor
+        speedRef={speedRef}
         satRadius={satRadius}
         onSatRadiusChange={setSatRadius}
         earthTexture={earthTexture}

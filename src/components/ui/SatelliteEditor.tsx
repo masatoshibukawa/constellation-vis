@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useState, type MutableRefObject, type RefObject } from "react";
 import type { SatelliteSpec } from "../../lib/satellites";
 import type { CommittedScenario } from "../../lib/scenario";
 import type SatelliteScene from "../../lib/visualization";
@@ -46,6 +46,8 @@ const MAX_PANEL_WIDTH = 720;
 const PANEL_WIDTH_STORAGE_KEY = "constellation-vis:side-panel-width";
 
 interface Props {
+  /** メインの3Dビューの速度倍率ref。NSGA2比較カードの3Dビューと時刻を同期させるために使う。 */
+  speedRef: MutableRefObject<number>;
   /** Called when the user clicks Update, with the newly committed scenario. */
   onUpdate: (scenario: CommittedScenario) => void;
   /** Current satellite draw radius */
@@ -175,6 +177,7 @@ interface Props {
 }
 
 export default function SatelliteEditor({
+  speedRef,
   onUpdate,
   satRadius,
   onSatRadiusChange,
@@ -660,6 +663,8 @@ export default function SatelliteEditor({
                 onConstTextChange={setConstText}
                 selection={nsga2Selection}
                 onSelectionChange={setNsga2Selection}
+                speedRef={speedRef}
+                startTime={new Date(startText)}
               />
             </TabsContent>
           </Tabs>

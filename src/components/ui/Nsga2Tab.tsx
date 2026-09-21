@@ -17,7 +17,7 @@
  * (nsga2_provenance は既存の「ミッション設計ウィザードの目的種別」フィールドである
  * mission_objective とは別物であり、両者を混同しないよう分離してある。)
  */
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState, type MutableRefObject } from "react";
 import { Button } from "./button";
 import PanelSection from "./PanelSection";
 import { ParetoScatter } from "../nsga2/ParetoScatter";
@@ -39,6 +39,10 @@ export interface Nsga2TabProps {
   onConstTextChange: (text: string) => void;
   selection: Nsga2SelectionState;
   onSelectionChange: (next: Nsga2SelectionState) => void;
+  /** メインの3Dビューの速度倍率ref。比較カードの3Dビューと時刻を同期させるために使う。 */
+  speedRef: MutableRefObject<number>;
+  /** メインビューのシミュレーション開始時刻。比較カードの3Dビューと同期させるために使う。 */
+  startTime: Date;
 }
 
 /**
@@ -57,6 +61,10 @@ export const Nsga2Tab = memo(function Nsga2Tab({
   onConstTextChange,
   selection,
   onSelectionChange,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Task 5でこの3Dビュー同期用propsを使用する予定。今回はバケツリレーのみ
+  speedRef: _speedRef,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Task 5でこの3Dビュー同期用propsを使用する予定。今回はバケツリレーのみ
+  startTime: _startTime,
 }: Nsga2TabProps) {
   const { manualRun, runId, sweepId, caseId, xKey, yKey, selectedIndex, compareCart } = selection;
   const [error, setError] = useState<string | null>(null);
