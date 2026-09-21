@@ -30,6 +30,8 @@ import {
 import { NSGA2_SHELL_MARKER, paretoSolutionToShell } from "../../lib/nsga2Import/toShell";
 import { addToCompareCart, removeFromCompareCart } from "../../lib/nsga2Import/compareCart";
 import { Nsga2CompareTable } from "../nsga2/Nsga2CompareTable";
+import { Nsga2CompareScene } from "../nsga2/Nsga2CompareScene";
+import { shellToSatellites } from "../../lib/nsga2Import/shellToSatellites";
 import type { NsgaRun, ParetoAxisKey, Nsga2SelectionState } from "../../lib/nsga2Import/types";
 import { parseConstellationConfig, serializeConstellationConfig } from "../../lib/constellationSerializer";
 import NSGA2_BUILTIN_RUNS from "../../lib/nsga2Runs.generated";
@@ -61,10 +63,8 @@ export const Nsga2Tab = memo(function Nsga2Tab({
   onConstTextChange,
   selection,
   onSelectionChange,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Task 5でこの3Dビュー同期用propsを使用する予定。今回はバケツリレーのみ
-  speedRef: _speedRef,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Task 5でこの3Dビュー同期用propsを使用する予定。今回はバケツリレーのみ
-  startTime: _startTime,
+  speedRef,
+  startTime,
 }: Nsga2TabProps) {
   const { manualRun, runId, sweepId, caseId, xKey, yKey, selectedIndex, compareCart } = selection;
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +114,14 @@ export const Nsga2Tab = memo(function Nsga2Tab({
   const handleClearCompare = useCallback(() => {
     patch({ compareCart: [] });
   }, [patch]);
+
+  const compareSceneSatellites = useMemo(
+    () =>
+      compareCart.map((entry) =>
+        shellToSatellites(paretoSolutionToShell(entry.solution, `compare-${entry.origin.caseId}`), startTime),
+      ),
+    [compareCart, startTime],
+  );
 
   async function handleOpenFolder() {
     setError(null);
@@ -323,6 +331,20 @@ export const Nsga2Tab = memo(function Nsga2Tab({
           onRemove={handleRemoveFromCompare}
           onClear={handleClearCompare}
         />
+        {compareCart.length > 0 && (
+          <div className="flex flex-wrap gap-3 mt-3">
+            {compareCart.map((entry, index) => (
+              <div key={index} className="w-[220px]">
+                <Nsga2CompareScene
+                  satellites={compareSceneSatellites[index] ?? []}
+                  startTime={startTime}
+                  speedRef={speedRef}
+                  label={`${entry.origin.runId} / ${entry.origin.sweepId} / ${entry.origin.caseId}`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </PanelSection>
     </div>
   );
