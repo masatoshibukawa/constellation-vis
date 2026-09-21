@@ -17,6 +17,10 @@ export interface Nsga2CompareGridProps {
   speedRef: MutableRefObject<number>;
 }
 
+/**
+ * 列数は常に最大2。3〜4件はこの2列にgridの行送り(自動折り返し)を任せることで
+ * 結果的に2x2相当のレイアウトになる(3件の場合は右下セルが空くだけ)。
+ */
 function columnsFor(count: number): number {
   return count <= 1 ? 1 : 2;
 }
