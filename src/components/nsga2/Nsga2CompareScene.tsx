@@ -58,14 +58,14 @@ export function Nsga2CompareScene({ satellites, startTime, speedRef, label }: Ns
   });
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 h-full">
       <p className="text-[11px] text-gray-400 truncate" title={label}>
         {label}
       </p>
       <div
         ref={mountRef}
         data-testid="nsga2-compare-scene-mount"
-        className="w-full aspect-square bg-black rounded border border-gray-700"
+        className="w-full flex-1 min-h-0 bg-black rounded border border-gray-700"
       />
     </div>
   );
