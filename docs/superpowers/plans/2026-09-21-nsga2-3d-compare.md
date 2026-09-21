@@ -308,6 +308,7 @@ Create `src/components/nsga2/Nsga2CompareScene.tsx`:
 import { useRef } from "react";
 import { useSatelliteScene } from "../useSatelliteScene";
 import { createDefaultIslSettings } from "../../lib/isl/types";
+import { BLUE_MARBLE_EARTH_MODE } from "../../lib/earthTextures";
 import type { SatelliteSpec } from "../../lib/satellites";
 
 export interface Nsga2CompareSceneProps {
@@ -329,7 +330,7 @@ export function Nsga2CompareScene({ satellites, startTime, speedRef, label }: Ns
     satellites,
     groundStations: [],
     satRadius: 0.01,
-    earthTexture: "realistic",
+    earthTexture: BLUE_MARBLE_EARTH_MODE,
     showGraticule: false,
     showEcliptic: false,
     showGeoOrbit: false,
