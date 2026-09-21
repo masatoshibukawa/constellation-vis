@@ -1,9 +1,19 @@
 // tests/Nsga2CompareScene.test.tsx
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, mock } from "bun:test";
 import { render, screen } from "@testing-library/react";
 import { useRef } from "react";
-import { Nsga2CompareScene } from "../src/components/nsga2/Nsga2CompareScene";
 import type { SatelliteSpec } from "../src/lib/satellites";
+
+// useSatelliteSceneは10ms遅延でThree.jsのWebGLRendererを生成する(src/components/useSatelliteScene.ts)。
+// happy-dom環境ではWebGLコンテキスト生成が例外を投げるため、実際のフックをそのまま使うと
+// unmountタイミング次第でテストスイート全体に例外が漏れるflaky testになる。このコンポーネントの
+// 責務(props→useSatelliteSceneへの引き渡し、ラベル・マウント要素の描画)を検証する目的では
+// フックの中身(Three.jsシーン構築)まで動かす必要はないため、モジュールごとモックする。
+mock.module("../src/components/useSatelliteScene", () => ({
+  useSatelliteScene: () => ({ current: null }),
+}));
+
+const { Nsga2CompareScene } = await import("../src/components/nsga2/Nsga2CompareScene");
 
 function Wrapper({ satellites, label }: { satellites: SatelliteSpec[]; label: string }) {
   const speedRef = useRef(1);
