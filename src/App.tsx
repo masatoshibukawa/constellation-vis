@@ -25,6 +25,7 @@ import {
   type IslShellRange,
 } from "./lib/isl/types";
 import { DEFAULT_NSGA2_SELECTION_STATE, type Nsga2SelectionState } from "./lib/nsga2Import/types";
+import { Nsga2CompareGrid } from "./components/nsga2/Nsga2CompareGrid";
 
 /**
  * Top level React component hosting the visualization. It sets up
@@ -165,12 +166,6 @@ function App() {
   useEffect(() => {
     loadGroundStations().then(setGroundStations);
   }, []);
-
-  // 一時的な参照: Task 5で constellationEpoch が Nsga2CompareGrid の epoch prop として
-  // 実際に使われ始めたら、このデバッグ用useEffectは削除してよい。
-  useEffect(() => {
-    console.debug("[nsga2] constellationEpoch updated:", constellationEpoch);
-  }, [constellationEpoch]);
 
   // Latest camera framing, seeded from the saved view. Kept in a ref so it can
   // be applied on every scene (re)build without triggering rebuilds itself.
@@ -376,10 +371,24 @@ function App() {
   );
 
   const gsInfoText = formatGroundStationInfo(groundStations, selectedGsIdx);
+  const showCompareGrid = nsga2Selection.compareCart.length > 0;
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
-      <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
+      <div
+        ref={mountRef}
+        style={{ width: "100%", height: "100%", display: showCompareGrid ? "none" : "block" }}
+      />
+      {showCompareGrid && (
+        <div style={{ position: "absolute", inset: 0 }}>
+          <Nsga2CompareGrid
+            entries={nsga2Selection.compareCart}
+            epoch={constellationEpoch}
+            startTime={startTime}
+            speedRef={speedRef}
+          />
+        </div>
+      )}
       <div
         ref={timeRef}
         style={{
