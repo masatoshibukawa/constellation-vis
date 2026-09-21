@@ -56,6 +56,7 @@ function App() {
   );
   const [simTime, setSimTime] = useState(() => new Date());
   const [nsga2Selection, setNsga2Selection] = useState<Nsga2SelectionState>(DEFAULT_NSGA2_SELECTION_STATE);
+  const [constellationEpoch, setConstellationEpoch] = useState<Date>(new Date());
 
   const [satRadius, setSatRadius] = useState(
     () => SAVED_DISPLAY?.satRadius ?? (window.innerWidth <= 600 ? 0.02 : 0.015),
@@ -164,6 +165,12 @@ function App() {
   useEffect(() => {
     loadGroundStations().then(setGroundStations);
   }, []);
+
+  // 一時的な参照: Task 5で constellationEpoch が Nsga2CompareGrid の epoch prop として
+  // 実際に使われ始めたら、このデバッグ用useEffectは削除してよい。
+  useEffect(() => {
+    console.debug("[nsga2] constellationEpoch updated:", constellationEpoch);
+  }, [constellationEpoch]);
 
   // Latest camera framing, seeded from the saved view. Kept in a ref so it can
   // be applied on every scene (re)build without triggering rebuilds itself.
@@ -436,6 +443,7 @@ function App() {
         speedRef={speedRef}
         nsga2Selection={nsga2Selection}
         onNsga2SelectionChange={setNsga2Selection}
+        onConstEpochChange={setConstellationEpoch}
         satRadius={satRadius}
         onSatRadiusChange={setSatRadius}
         earthTexture={earthTexture}

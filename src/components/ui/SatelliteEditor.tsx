@@ -10,6 +10,7 @@ import {
   downloadFile,
 } from "../../lib/config";
 import { buildConstellation } from "../../lib/tomlParsers";
+import { parseConstellationConfig } from "../../lib/constellationSerializer";
 import EditorTab from "./EditorTab";
 import OrbitTab from "./OrbitTab";
 import AnalysisTab, { type AnalysisType } from "./AnalysisTab";
@@ -51,6 +52,8 @@ interface Props {
   /** NSGA2タブのラン/sweep/case選択・比較カート状態。タブ切替をまたいで保持するためApp.tsx側で保持する。 */
   nsga2Selection: Nsga2SelectionState;
   onNsga2SelectionChange: (next: Nsga2SelectionState) => void;
+  /** コンステレーションのepochが変わるたびに呼ばれる。メイン画面の比較グリッド用。 */
+  onConstEpochChange?: (epoch: Date) => void;
   /** Called when the user clicks Update, with the newly committed scenario. */
   onUpdate: (scenario: CommittedScenario) => void;
   /** Current satellite draw radius */
@@ -182,6 +185,7 @@ interface Props {
 export default function SatelliteEditor({
   nsga2Selection,
   onNsga2SelectionChange,
+  onConstEpochChange,
   onUpdate,
   satRadius,
   onSatRadiusChange,
@@ -276,6 +280,10 @@ export default function SatelliteEditor({
   const [analysisRequest, setAnalysisRequest] = useState<{ type: AnalysisType; nonce: number } | null>(
     null,
   );
+  useEffect(() => {
+    onConstEpochChange?.(parseConstellationConfig(constText).epoch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [constText]);
   useEffect(() => {
     if (!openTabRequest) return;
     setOpen(true);
