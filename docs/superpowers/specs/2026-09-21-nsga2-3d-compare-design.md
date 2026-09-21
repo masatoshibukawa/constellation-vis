@@ -4,23 +4,27 @@
 
 既存のNSGA2比較カート機能(`Nsga2CompareTable`)は軌道要素を数値の横並び表で比較できるが、
 数値だけでは打上げ回数(N_launch)が異なる解同士の衛星配置・軌道形状の違いを直感的に把握しづらい。
-比較カートに入れた各解について、地球と衛星配置を描画する小さな3Dビューを解の数だけ横並びに
-表示し、視覚的にも比較できるようにする。
+比較カートに入れた各解について、地球と衛星配置を描画する小さな3Dビューを解の数だけ表示し、
+視覚的にも比較できるようにする。
 
 - 数値比較表(`Nsga2CompareTable`)は現状維持し、3D比較は別コンポーネントとして追加する
-- 表示場所は `Nsga2Tab` の既存「比較」セクション内、数値表と並べる
+- **表示場所はメイン画面(既存のフルスクリーン3Dビュー)をグリッド分割した領域。NSGA2タブ内
+  ではなく、比較カートに1件以上入っている間はメイン画面自体が分割表示に切り替わる**
+  (当初 `Nsga2Tab` 内の小さいプレビュー行として設計したが、ユーザーからのフィードバックで
+  「タブ以外のメイン画面を分割してそこに描画してほしい」という要望があり変更した)
 - 比較対象は地上局・時刻・カメラ角度をメインの3Dビューと共有し、コンステレーション(衛星配置)の違いだけを見せることに集中する
 - ISL・地上局コーン・FOVコーン等の重い装飾機能はオフにし、軌道・衛星位置のみ表示する
 - 想定件数は2〜4件程度(WebGLコンテキストはブラウザで同時に8〜16個程度までしか保持できない制約があるため)
 
 ## 対象ファイル
 
-- `src/lib/nsga2Import/shellToSatellites.ts`(新規) — `ConstellationShell` 1件を `SatelliteSpec[]` にランタイム変換する純粋関数
-- `src/components/nsga2/Nsga2CompareScene.tsx`(新規) — 比較カード1枚分の小さな3Dビュー
-- `src/lib/visualization.ts` — リサイズ処理をウィンドウサイズ基準からコンテナサイズ基準に修正(既存メインビューの挙動は変えない)
-- `src/components/ui/Nsga2Tab.tsx` — 「比較」セクションに3Dビュー行を追加。新規props `speedRef`/`startTime` を受け取る
-- `src/components/ui/SatelliteEditor.tsx` — `speedRef`(新規prop)を受け取り `Nsga2Tab` に中継する。`startTime` は既存の `startText` から生成できるので新規propsは不要
-- `src/App.tsx` — `SatelliteEditor` に `speedRef`(既存の変数)を新規propsとして渡す
+- `src/lib/nsga2Import/shellToSatellites.ts`(実装済み) — `ConstellationShell` 1件を `SatelliteSpec[]` にランタイム変換する純粋関数
+- `src/components/nsga2/Nsga2CompareScene.tsx`(実装済み) — 比較カード1枚分の小さな3Dビュー
+- `src/lib/visualization.ts`(実装済み) — リサイズ処理をウィンドウサイズ基準からコンテナサイズ基準に修正済み(コンテナ分割後の各セルにも対応できる)
+- `src/App.tsx` — `nsga2Selection`(`compareCart`含む)を `SatelliteEditor` から持ち上げて保持する。`constellationEpoch` state を新設し `onConstEpochChange` コールバックで更新する。メイン3Dビュー領域を `compareCart.length > 0` のときグリッド分割表示に切り替える新規コンポーネント `Nsga2CompareGrid` を配置する
+- `src/components/nsga2/Nsga2CompareGrid.tsx`(新規) — 比較カートの件数に応じたグリッドレイアウトで `Nsga2CompareScene` を並べる
+- `src/components/ui/SatelliteEditor.tsx` — `nsga2Selection`/`onNsga2SelectionChange` をpropsとして受け取るよう変更(ローカルstateを廃止)。`constText` が変わるたびに `onConstEpochChange` を呼ぶ
+- `src/components/ui/Nsga2Tab.tsx` — 「比較」セクションから3Dビュー行(旧実装)を削除し、数値比較表のみに戻す。`speedRef`/`startTime` propsは不要になるため削除する
 
 ## 設計
 
@@ -89,9 +93,9 @@ export interface Nsga2CompareSceneProps {
   `ensureIslWorker()` に到達せず早期returnするため、ISLワーカーは生成されない(確認済み)。
 - カメラは `cameraMode: "free"` 固定。各カードが独立した `OrbitControls` を持ち、カード単位で
   自由に回転・ズームできる(メインビューとは独立、要件で確認済み)。
-- 時刻・速度はメインビューの `timeRef`/`speedRef` をpropsで受け取ってそのまま
-  `SatelliteScene` に渡す。同じ `MutableRefObject` インスタンスを共有するため、メインビューの
-  時刻が進むと全カードが同期して進む。
+- 時刻・速度はメインビューの `startTime`/`speedRef` をpropsで受け取ってそのまま
+  `SatelliteScene` に渡す(`timeRef` は前述の通り各カード内部のダミーrefを使う)。同じ
+  `speedRef` インスタンスを共有するため、メインビューの時刻が進むと全カードが同期して進む。
 - カードの上に `label`(解の由来 = run/sweep/case または「解1」のような通し番号)を表示する。
 
 ### 3. リサイズ処理のコンテナ基準化(`visualization.ts`)
@@ -114,42 +118,123 @@ export interface Nsga2CompareSceneProps {
   `window` サイズいっぱいに広がるレイアウトになっているため、この変更をしても
   挙動は変わらない(コンテナサイズ = ウィンドウサイズになる)。
 
-### 4. `Nsga2Tab.tsx` への統合
+### 4. `nsga2Selection` を `App.tsx` に持ち上げる
 
-既存の「比較」セクション(`Nsga2CompareTable` を表示している `PanelSection`)の下に、
-3Dビューの行を追加する。
+`compareCart` は現在 `Nsga2SelectionState`(`manualRun`/`runId`/`sweepId`/`caseId`/`xKey`/`yKey`/
+`selectedIndex`/`compareCart`)の一部として `SatelliteEditor.tsx` のローカル state
+(`useState<Nsga2SelectionState>(DEFAULT_NSGA2_SELECTION_STATE)`)にある。メイン画面の分割判定
+(`compareCart.length > 0`)を `App.tsx` で行うには、この state を丸ごと `App.tsx` に移す。
+
+- `App.tsx`: `const [nsga2Selection, setNsga2Selection] = useState<Nsga2SelectionState>(DEFAULT_NSGA2_SELECTION_STATE);`
+  を追加し、`SatelliteEditor` に `nsga2Selection`/`onNsga2SelectionChange={setNsga2Selection}` として渡す。
+- `SatelliteEditor.tsx`: 既存の `const [nsga2Selection, setNsga2Selection] = useState(...)` を削除し、
+  props経由で受け取った `nsga2Selection`/`onNsga2SelectionChange` をそのまま `Nsga2Tab` に渡す
+  (変数名は同じままなので、`Nsga2Tab` への受け渡しコード自体は変更不要)。
+
+### 5. `Nsga2Tab.tsx` から3Dビュー行を削除する
+
+Task 5(旧設計)で追加した、「比較」セクション内の `Nsga2CompareScene` 横並び表示、
+`compareSceneSatellites` の `useMemo`、`speedRef`/`startTime` props を全て削除し、
+「比較」セクションは `Nsga2CompareTable` のみに戻す。3D比較はメイン画面側の責務になるため、
+`Nsga2Tab` は `speedRef`/`startTime` を受け取る必要がなくなる。
+
+### 6. メイン画面の分割グリッド(`Nsga2CompareGrid.tsx`、新規)
+
+比較カートの中身から、3Dビューのグリッド配置を組み立てる。件数に応じた列数の決定と
+`shellToSatellites`/`paretoSolutionToShell` の呼び出しをこのコンポーネントに集約する。
 
 ```tsx
-<PanelSection title={`比較 (${compareCart.length} 件)`}>
-  <Nsga2CompareTable entries={compareCart} onRemove={handleRemoveFromCompare} onClear={handleClearCompare} />
-  {compareCart.length > 0 && (
-    <div className="flex flex-wrap gap-3 mt-3">
-      {compareCart.map((entry, index) => (
-        <div key={index} style={{ width: 220, height: 220 }}>
-          <Nsga2CompareScene
-            satellites={shellToSatellites(
-              paretoSolutionToShell(entry.solution, `compare-${index}`),
-              parseConstellationConfig(constText).epoch,
-            )}
-            startTime={mainStartTime}
-            speedRef={mainSpeedRef}
-            label={`${entry.origin.runId} / ${entry.origin.sweepId} / ${entry.origin.caseId}`}
-          />
-        </div>
+// src/components/nsga2/Nsga2CompareGrid.tsx
+/**
+ * NSGA2比較カートの中身をメイン画面いっぱいに使ってグリッド表示する。
+ * 2件なら2列、3〜4件なら2x2に自動で列数を決める(5件以上はスコープ外、
+ * WebGLコンテキスト数の制約を踏まえ2〜4件を想定)。
+ */
+import { useMemo } from "react";
+import { Nsga2CompareScene } from "./Nsga2CompareScene";
+import { shellToSatellites } from "../../lib/nsga2Import/shellToSatellites";
+import { paretoSolutionToShell } from "../../lib/nsga2Import/toShell";
+import type { ComparedSolution } from "../../lib/nsga2Import/types";
+
+export interface Nsga2CompareGridProps {
+  entries: ComparedSolution[];
+  epoch: Date;
+  startTime: Date;
+  speedRef: React.MutableRefObject<number>;
+}
+
+function columnsFor(count: number): number {
+  if (count <= 1) return 1;
+  if (count === 2) return 2;
+  return 2; // 3〜4件は2x2(gridの行送りに任せる)
+}
+
+export function Nsga2CompareGrid({ entries, epoch, startTime, speedRef }: Nsga2CompareGridProps) {
+  const satellitesByEntry = useMemo(
+    () =>
+      entries.map((entry) =>
+        shellToSatellites(paretoSolutionToShell(entry.solution, `compare-${entry.origin.caseId}`), epoch),
+      ),
+    [entries, epoch],
+  );
+
+  return (
+    <div
+      className="grid gap-2 w-full h-full p-2"
+      style={{ gridTemplateColumns: `repeat(${columnsFor(entries.length)}, minmax(0, 1fr))` }}
+    >
+      {entries.map((entry, index) => (
+        <Nsga2CompareScene
+          key={index}
+          satellites={satellitesByEntry[index] ?? []}
+          startTime={startTime}
+          speedRef={speedRef}
+          label={`${entry.origin.runId} / ${entry.origin.sweepId} / ${entry.origin.caseId}`}
+        />
       ))}
     </div>
-  )}
-</PanelSection>
+  );
+}
 ```
 
-- `mainStartTime`/`mainSpeedRef` はメインの3Dビューが使っている値を渡す。`startTime` は
-  `SatelliteEditor.tsx` が既に `startText`(文字列state)から `new Date(startText)` として
-  保持しているのでそのまま使えるが、`speedRef` は現状 `App.tsx` にしかなく
-  `SatelliteEditor` にも `Nsga2Tab` にも渡されていない。`App.tsx` → `SatelliteEditor.tsx` →
-  `Nsga2Tab.tsx` の2段でバケツリレーの新規propsとして追加する。
-- `satellites` の計算は `useMemo` で `compareCart` の変化時のみ再計算する
-  (`Nsga2Tab` は `React.memo` 化されており、毎フレームの再レンダリングに巻き込まれない
-  設計を維持する)。
+`epoch` はメインのコンステレーション設定(`constText` を `parseConstellationConfig` した
+`.epoch`)を使う。`constText` 自体は引き続き `SatelliteEditor.tsx` 側のローカル state として
+保持し、`App.tsx` には渡さない。代わりに `SatelliteEditor.tsx` 側で `constText` が変わるたびに
+`parseConstellationConfig(constText).epoch` を計算し、新規コールバックprop
+`onConstEpochChange?: (epoch: Date) => void` で `App.tsx` に通知する。`App.tsx` はこれを
+`const [constellationEpoch, setConstellationEpoch] = useState<Date>(new Date())` のような
+state で受け取り、`Nsga2CompareGrid` の `epoch` prop に渡す。
+
+### 7. `App.tsx` でのメイン画面切り替え
+
+既存の `mountRef` のdiv(`<div ref={mountRef} style={{ width: "100%", height: "100%" }} />`)は
+`compareCart.length > 0` のとき `display: none` にして裏で動かし続け(`SatelliteScene` の
+再生成コストを避ける)、代わりに同じ領域に `Nsga2CompareGrid` を重ねて表示する。
+
+```tsx
+<div style={{ width: "100%", height: "100%", position: "relative" }}>
+  <div
+    ref={mountRef}
+    style={{ width: "100%", height: "100%", display: nsga2Selection.compareCart.length > 0 ? "none" : "block" }}
+  />
+  {nsga2Selection.compareCart.length > 0 && (
+    <div style={{ position: "absolute", inset: 0 }}>
+      <Nsga2CompareGrid
+        entries={nsga2Selection.compareCart}
+        epoch={constellationEpoch}
+        startTime={startTime}
+        speedRef={speedRef}
+      />
+    </div>
+  )}
+  {/* constellationEpoch は SatelliteEditor の onConstEpochChange コールバックで更新される
+      useState<Date>(new Date()) */}
+  {/* 既存の timeRef・SatelliteInfo 等はそのまま */}
+</div>
+```
+
+`compareCart` が空に戻ると `Nsga2CompareGrid` はアンマウントされ、`mountRef` のdivが再表示される
+(元の1枚のメインビューに自動的に戻る)。
 
 ## 非スコープ
 
@@ -158,3 +243,14 @@ export interface Nsga2CompareSceneProps {
   比較をしたい場合は軽量版シーンの新設やcanvas共有方式を別途検討する)
 - コンステレーションへの反映(既存の数値比較表と同様、見比べるだけの用途)
 - ISLワーカーの動的な有効/無効切り替えUI(比較ビューでは常時無効固定)
+- NSGA2タブを開いていない状態での比較表示(トリガーはタブの開閉ではなく `compareCart` の
+  中身のみ。NSGA2タブを閉じてシナリオタブ等に切り替えても、比較カートに解が入っていれば
+  メイン画面の分割表示は継続する)
+- 分割グリッドの列数・配置のユーザーカスタマイズ(件数に応じた自動決定のみ)
+
+## 変更履歴
+
+- 2026-09-21 初版: `Nsga2Tab` 内の小さいプレビュー行として設計、実装(Task 1〜5)
+- 2026-09-21 改訂: ユーザーから「タブ以外のメイン画面を分割してそこに描画してほしい」との
+  フィードバックを受け、表示先をメイン画面のグリッド分割に変更。`Nsga2Tab` 内のプレビュー行は
+  削除し、`nsga2Selection` を `App.tsx` に持ち上げる設計に改めた(セクション4〜7が該当)
