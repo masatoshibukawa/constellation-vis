@@ -17,7 +17,7 @@
  * (nsga2_provenance は既存の「ミッション設計ウィザードの目的種別」フィールドである
  * mission_objective とは別物であり、両者を混同しないよう分離してある。)
  */
-import { memo, useCallback, useMemo, useState, type MutableRefObject } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Button } from "./button";
 import PanelSection from "./PanelSection";
 import { ParetoScatter } from "../nsga2/ParetoScatter";
@@ -30,8 +30,6 @@ import {
 import { NSGA2_SHELL_MARKER, paretoSolutionToShell } from "../../lib/nsga2Import/toShell";
 import { addToCompareCart, removeFromCompareCart } from "../../lib/nsga2Import/compareCart";
 import { Nsga2CompareTable } from "../nsga2/Nsga2CompareTable";
-import { Nsga2CompareScene } from "../nsga2/Nsga2CompareScene";
-import { shellToSatellites } from "../../lib/nsga2Import/shellToSatellites";
 import type { NsgaRun, ParetoAxisKey, Nsga2SelectionState } from "../../lib/nsga2Import/types";
 import { parseConstellationConfig, serializeConstellationConfig } from "../../lib/constellationSerializer";
 import NSGA2_BUILTIN_RUNS from "../../lib/nsga2Runs.generated";
@@ -41,10 +39,6 @@ export interface Nsga2TabProps {
   onConstTextChange: (text: string) => void;
   selection: Nsga2SelectionState;
   onSelectionChange: (next: Nsga2SelectionState) => void;
-  /** メインの3Dビューの速度倍率ref。比較カードの3Dビューと時刻を同期させるために使う。 */
-  speedRef: MutableRefObject<number>;
-  /** メインビューのシミュレーション開始時刻。比較カードの3Dビューと同期させるために使う。 */
-  startTime: Date;
 }
 
 /**
@@ -63,8 +57,6 @@ export const Nsga2Tab = memo(function Nsga2Tab({
   onConstTextChange,
   selection,
   onSelectionChange,
-  speedRef,
-  startTime,
 }: Nsga2TabProps) {
   const { manualRun, runId, sweepId, caseId, xKey, yKey, selectedIndex, compareCart } = selection;
   const [error, setError] = useState<string | null>(null);
@@ -114,14 +106,6 @@ export const Nsga2Tab = memo(function Nsga2Tab({
   const handleClearCompare = useCallback(() => {
     patch({ compareCart: [] });
   }, [patch]);
-
-  const compareSceneSatellites = useMemo(
-    () =>
-      compareCart.map((entry) =>
-        shellToSatellites(paretoSolutionToShell(entry.solution, `compare-${entry.origin.caseId}`), startTime),
-      ),
-    [compareCart, startTime],
-  );
 
   async function handleOpenFolder() {
     setError(null);
@@ -332,18 +316,9 @@ export const Nsga2Tab = memo(function Nsga2Tab({
           onClear={handleClearCompare}
         />
         {compareCart.length > 0 && (
-          <div className="flex flex-wrap gap-3 mt-3">
-            {compareCart.map((entry, index) => (
-              <div key={index} className="w-[220px]">
-                <Nsga2CompareScene
-                  satellites={compareSceneSatellites[index] ?? []}
-                  startTime={startTime}
-                  speedRef={speedRef}
-                  label={`${entry.origin.runId} / ${entry.origin.sweepId} / ${entry.origin.caseId}`}
-                />
-              </div>
-            ))}
-          </div>
+          <p className="text-[11px] text-gray-500 mt-2">
+            比較対象の3Dビューはメイン画面に分割表示されます。
+          </p>
         )}
       </PanelSection>
     </div>
