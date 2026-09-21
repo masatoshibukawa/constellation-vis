@@ -24,6 +24,7 @@ import {
   type IslSettings,
   type IslShellRange,
 } from "./lib/isl/types";
+import { DEFAULT_NSGA2_SELECTION_STATE, type Nsga2SelectionState } from "./lib/nsga2Import/types";
 
 /**
  * Top level React component hosting the visualization. It sets up
@@ -54,6 +55,7 @@ function App() {
     SAVED_VIEW?.camera.mode ?? "free",
   );
   const [simTime, setSimTime] = useState(() => new Date());
+  const [nsga2Selection, setNsga2Selection] = useState<Nsga2SelectionState>(DEFAULT_NSGA2_SELECTION_STATE);
 
   const [satRadius, setSatRadius] = useState(
     () => SAVED_DISPLAY?.satRadius ?? (window.innerWidth <= 600 ? 0.02 : 0.015),
@@ -432,6 +434,8 @@ function App() {
       />
       <SatelliteEditor
         speedRef={speedRef}
+        nsga2Selection={nsga2Selection}
+        onNsga2SelectionChange={setNsga2Selection}
         satRadius={satRadius}
         onSatRadiusChange={setSatRadius}
         earthTexture={earthTexture}

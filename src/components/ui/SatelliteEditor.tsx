@@ -16,7 +16,7 @@ import AnalysisTab, { type AnalysisType } from "./AnalysisTab";
 import OptionTab from "./OptionTab";
 import IslTab from "./IslTab";
 import { Nsga2Tab } from "./Nsga2Tab";
-import { DEFAULT_NSGA2_SELECTION_STATE, type Nsga2SelectionState } from "../../lib/nsga2Import/types";
+import type { Nsga2SelectionState } from "../../lib/nsga2Import/types";
 import ImportDialog from "./ImportDialog";
 import type { IslPathResult, IslSettings, IslShellRange } from "../../lib/isl/types";
 import {
@@ -48,6 +48,9 @@ const PANEL_WIDTH_STORAGE_KEY = "constellation-vis:side-panel-width";
 interface Props {
   /** メインの3Dビューの速度倍率ref。NSGA2比較カードの3Dビューと時刻を同期させるために使う。 */
   speedRef: MutableRefObject<number>;
+  /** NSGA2タブのラン/sweep/case選択・比較カート状態。タブ切替をまたいで保持するためApp.tsx側で保持する。 */
+  nsga2Selection: Nsga2SelectionState;
+  onNsga2SelectionChange: (next: Nsga2SelectionState) => void;
   /** Called when the user clicks Update, with the newly committed scenario. */
   onUpdate: (scenario: CommittedScenario) => void;
   /** Current satellite draw radius */
@@ -177,7 +180,8 @@ interface Props {
 }
 
 export default function SatelliteEditor({
-  speedRef,
+  nsga2Selection,
+  onNsga2SelectionChange,
   onUpdate,
   satRadius,
   onSatRadiusChange,
@@ -272,12 +276,6 @@ export default function SatelliteEditor({
   const [analysisRequest, setAnalysisRequest] = useState<{ type: AnalysisType; nonce: number } | null>(
     null,
   );
-  // NsgaTabのデータソース/選択解状態。Radix TabsのTabsContentは非アクティブ
-  // タブをアンマウントするため、Nsga2Tab内のローカルuseStateのままだと
-  // 他タブに切り替えて戻るたびに選択が初期化されてしまう。そのため親である
-  // このコンポーネントに持ち上げて、タブ切り替えをまたいで保持する。
-  const [nsga2Selection, setNsga2Selection] = useState<Nsga2SelectionState>(DEFAULT_NSGA2_SELECTION_STATE);
-
   useEffect(() => {
     if (!openTabRequest) return;
     setOpen(true);
@@ -662,9 +660,7 @@ export default function SatelliteEditor({
                 constText={constText}
                 onConstTextChange={setConstText}
                 selection={nsga2Selection}
-                onSelectionChange={setNsga2Selection}
-                speedRef={speedRef}
-                startTime={new Date(startText)}
+                onSelectionChange={onNsga2SelectionChange}
               />
             </TabsContent>
           </Tabs>
