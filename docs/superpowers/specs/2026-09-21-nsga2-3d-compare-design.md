@@ -18,7 +18,9 @@
 - `src/lib/nsga2Import/shellToSatellites.ts`(新規) — `ConstellationShell` 1件を `SatelliteSpec[]` にランタイム変換する純粋関数
 - `src/components/nsga2/Nsga2CompareScene.tsx`(新規) — 比較カード1枚分の小さな3Dビュー
 - `src/lib/visualization.ts` — リサイズ処理をウィンドウサイズ基準からコンテナサイズ基準に修正(既存メインビューの挙動は変えない)
-- `src/components/ui/Nsga2Tab.tsx` — 「比較」セクションに3Dビュー行を追加
+- `src/components/ui/Nsga2Tab.tsx` — 「比較」セクションに3Dビュー行を追加。新規props `speedRef`/`startTime` を受け取る
+- `src/components/ui/SatelliteEditor.tsx` — `speedRef`(新規prop)を受け取り `Nsga2Tab` に中継する。`startTime` は既存の `startText` から生成できるので新規propsは不要
+- `src/App.tsx` — `SatelliteEditor` に `speedRef`(既存の変数)を新規propsとして渡す
 
 ## 設計
 
@@ -60,20 +62,31 @@ Props:
 ```ts
 export interface Nsga2CompareSceneProps {
   satellites: SatelliteSpec[];
-  epoch: Date;
-  /** メインビューと同期させるための共有ref。渡された参照をそのまま使う。 */
-  timeRef: React.MutableRefObject<number>;
+  /** メインビューと同じシミュレーション開始時刻。時刻同期の起点。 */
+  startTime: Date;
+  /** メインビューと共有する速度倍率ref。同じインスタンスを渡す。 */
   speedRef: React.MutableRefObject<number>;
   label: string;
 }
 ```
 
+`SatelliteSceneParams.timeRef`(`React.RefObject<HTMLDivElement | null>`)は時刻を画面にテキスト
+表示するためのDOM要素参照であり、シーン間の時刻同期には関与しない(`visualization.ts:1509`)。
+実際の時刻進行は `startTime`(シミュレーション開始時刻、`SatelliteScene.startSim` の元)と
+`speedRef.current`(速度倍率)、そして各シーンが生成された瞬間の `Date.now()`
+(`SatelliteScene.startReal`)から `simDeltaMs = (Date.now() - startReal) * speedRef.current` として
+毎フレーム計算される(`visualization.ts:1261-1263`)。全カードで同じ `startTime` と同じ
+`speedRef` インスタンスを渡せば、カードごとの生成タイミングのわずかなズレ(数十〜数百ms)は
+残るが拡大はせず、実用上は同期して見える。したがって `Nsga2CompareScene` には `timeRef` を
+渡す必要はなく、各カード内部でダミーの `useRef<HTMLDivElement>(null)` を用意すれば十分。
+
 - `groundStations` は空配列固定。
 - 表示設定は簡略固定値を渡す: `showGraticule/showEcliptic/showGeoOrbit/showSunDirection/
   showGroundStationCones/showSatelliteFovCones` は全て `false`、`showAllOrbits` は `true`
   (軌道形状の違いが一目でわかるように)。
-- ISLは無効(`islSettings` は `createDefaultIslSettings()` の `enabled: false` 相当)。
-  ISLワーカーは `enabled: false` のときに生成されないことを実装タスクで確認してから接続する。
+- ISLは無効(`islSettings` は `createDefaultIslSettings()`、デフォルトで `enabled: false`)。
+  `updateIslMarkersAndPath`(`visualization.ts:1064-1088`)は `enabled: false` のとき
+  `ensureIslWorker()` に到達せず早期returnするため、ISLワーカーは生成されない(確認済み)。
 - カメラは `cameraMode: "free"` 固定。各カードが独立した `OrbitControls` を持ち、カード単位で
   自由に回転・ズームできる(メインビューとは独立、要件で確認済み)。
 - 時刻・速度はメインビューの `timeRef`/`speedRef` をpropsで受け取ってそのまま
@@ -118,8 +131,7 @@ export interface Nsga2CompareSceneProps {
               paretoSolutionToShell(entry.solution, `compare-${index}`),
               parseConstellationConfig(constText).epoch,
             )}
-            epoch={parseConstellationConfig(constText).epoch}
-            timeRef={mainTimeRef}
+            startTime={mainStartTime}
             speedRef={mainSpeedRef}
             label={`${entry.origin.runId} / ${entry.origin.sweepId} / ${entry.origin.caseId}`}
           />
@@ -130,9 +142,11 @@ export interface Nsga2CompareSceneProps {
 </PanelSection>
 ```
 
-- `mainTimeRef`/`mainSpeedRef` はメインの3Dビューが使っている `timeRef`/`speedRef` を
-  `Nsga2Tab` の親(`SatelliteEditor.tsx`)からpropsで受け取る(現状 `Nsga2Tab` には
-  渡されていないため、新規propsとして追加する)。
+- `mainStartTime`/`mainSpeedRef` はメインの3Dビューが使っている値を渡す。`startTime` は
+  `SatelliteEditor.tsx` が既に `startText`(文字列state)から `new Date(startText)` として
+  保持しているのでそのまま使えるが、`speedRef` は現状 `App.tsx` にしかなく
+  `SatelliteEditor` にも `Nsga2Tab` にも渡されていない。`App.tsx` → `SatelliteEditor.tsx` →
+  `Nsga2Tab.tsx` の2段でバケツリレーの新規propsとして追加する。
 - `satellites` の計算は `useMemo` で `compareCart` の変化時のみ再計算する
   (`Nsga2Tab` は `React.memo` 化されており、毎フレームの再レンダリングに巻き込まれない
   設計を維持する)。
