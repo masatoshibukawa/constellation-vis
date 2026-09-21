@@ -302,6 +302,8 @@ export default class SatelliteScene {
       throw new Error("mountRef must be attached to a DOM element");
     }
     const mountNode = this.params.mountRef.current;
+    const initialWidth = Math.max(1, mountNode.clientWidth || window.innerWidth);
+    const initialHeight = Math.max(1, mountNode.clientHeight || window.innerHeight);
     this.currentSimDate = this.params.startTime;
     this.scene = new THREE.Scene();
     if (params.whiteBackground) {
@@ -309,7 +311,7 @@ export default class SatelliteScene {
     }
     this.camera = new THREE.PerspectiveCamera(
       45,
-      window.innerWidth / window.innerHeight,
+      initialWidth / initialHeight,
       0.1,
       1000,
     );
@@ -319,7 +321,7 @@ export default class SatelliteScene {
     this.scene.add(this.cameraHolder);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(initialWidth, initialHeight);
     mountNode.appendChild(this.renderer.domElement);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -651,14 +653,22 @@ export default class SatelliteScene {
     this.startReal = Date.now();
     this.startSim = this.params.startTime.getTime();
 
-    const handleResize = () => {
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-      this.camera.aspect = window.innerWidth / window.innerHeight;
+    const handleResize = (width: number, height: number) => {
+      const w = Math.max(1, width);
+      const h = Math.max(1, height);
+      this.renderer.setSize(w, h);
+      this.camera.aspect = w / h;
       this.camera.updateProjectionMatrix();
-      this.kmlRenderer.setResolution(window.innerWidth, window.innerHeight);
+      this.kmlRenderer.setResolution(w, h);
     };
-    window.addEventListener("resize", handleResize);
-    this.disposeFns.push(() => window.removeEventListener("resize", handleResize));
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      handleResize(width, height);
+    });
+    resizeObserver.observe(mountNode);
+    this.disposeFns.push(() => resizeObserver.disconnect());
 
     this.animate();
   }
